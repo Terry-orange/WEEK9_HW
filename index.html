@@ -1,0 +1,2106 @@
+<!DOCTYPE html>
+<html lang="zh-Hant" data-theme="light" data-theme-mode="system">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>菜單與即時價格收集</title>
+  <meta name="description" content="期末記帳專案前置模組：輸入店名自動搜尋整理菜單與即時價格，支援地區篩選、三態主題切換與結構化 JSON 備份。" />
+  <script>
+    (function () {
+      try {
+        var saved = localStorage.getItem('menu_collector_theme') || 'system';
+        var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        var resolved = saved === 'system' ? (prefersDark ? 'dark' : 'light') : saved;
+        if (resolved !== 'dark' && resolved !== 'light') resolved = 'light';
+        document.documentElement.setAttribute('data-theme', resolved);
+        document.documentElement.setAttribute('data-theme-mode', saved);
+      } catch (e) {
+        document.documentElement.setAttribute('data-theme', 'light');
+        document.documentElement.setAttribute('data-theme-mode', 'system');
+      }
+    })();
+  </script>
+  <style>
+    :root {
+      --bg-page: #F8F7F4;
+      --bg-card: #FFFFFF;
+      --bg-subtle: #F1EFEA;
+      --bg-input: #FFFFFF;
+      --text-primary: #1C1E21;
+      --text-secondary: #646A73;
+      --text-muted: #8E95A0;
+      --border-color: #E6E2D8;
+      --border-strong: #D5CFC2;
+      --accent: #F97316;
+      --accent-hover: #EA580C;
+      --accent-soft: #FFF1E6;
+      --accent-soft-hover: #FFE4CE;
+      --accent-text: #C2410C;
+      --success-bg: #ECFDF3;
+      --success-text: #15803D;
+      --success-border: #BBF7D0;
+      --warn-bg: #FFF7ED;
+      --warn-text: #B45309;
+      --warn-border: #FED7AA;
+      --shadow-sm: 0 1px 2px rgba(28, 30, 33, 0.05);
+      --shadow-md: 0 6px 20px rgba(28, 30, 33, 0.07);
+      --shadow-lg: 0 18px 42px rgba(28, 30, 33, 0.14);
+      --radius-sm: 10px;
+      --radius-md: 14px;
+      --radius-lg: 20px;
+      --font-sans: "Inter", "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    html[data-theme="dark"] {
+      --bg-page: #121316;
+      --bg-card: #1D1F26;
+      --bg-subtle: #252832;
+      --bg-input: #17191F;
+      --text-primary: #F3F4F6;
+      --text-secondary: #A1A7B3;
+      --text-muted: #717885;
+      --border-color: #2C303C;
+      --border-strong: #3B4050;
+      --accent: #FB923C;
+      --accent-hover: #F97316;
+      --accent-soft: rgba(249, 115, 22, 0.16);
+      --accent-soft-hover: rgba(249, 115, 22, 0.25);
+      --accent-text: #FDBA74;
+      --success-bg: rgba(34, 197, 94, 0.14);
+      --success-text: #86EFAC;
+      --success-border: rgba(34, 197, 94, 0.3);
+      --warn-bg: rgba(245, 158, 11, 0.15);
+      --warn-text: #FCD34D;
+      --warn-border: rgba(245, 158, 11, 0.32);
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.25);
+      --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.32);
+      --shadow-lg: 0 20px 48px rgba(0, 0, 0, 0.52);
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      background-color: var(--bg-page);
+      color: var(--text-primary);
+      font-family: var(--font-sans);
+      line-height: 1.55;
+      -webkit-font-smoothing: antialiased;
+      transition: background-color 0.2s ease, color 0.2s ease;
+    }
+
+    button, input, select, textarea { font-family: inherit; }
+    a { color: inherit; text-decoration: none; }
+    .tabular-nums { font-variant-numeric: tabular-nums; }
+
+    .app-shell {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 24px 20px 64px;
+    }
+
+    /* Header */
+    .app-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+      padding: 16px 20px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-sm);
+      margin-bottom: 24px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      min-width: 0;
+    }
+
+    .brand-icon {
+      width: 46px;
+      height: 46px;
+      flex-shrink: 0;
+      border-radius: 14px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .brand-text h1 {
+      margin: 0;
+      font-size: 1.25rem;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+    }
+
+    .brand-subtitle {
+      margin: 3px 0 0;
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .status-dot-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 2px 9px;
+      border-radius: 999px;
+      background: var(--bg-subtle);
+      color: var(--text-secondary);
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+
+    .status-dot-pill.is-online {
+      background: var(--success-bg);
+      color: var(--success-text);
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    /* 3-State Theme Switcher */
+    .theme-switcher {
+      display: inline-flex;
+      align-items: center;
+      padding: 3px;
+      background: var(--bg-subtle);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      gap: 2px;
+    }
+
+    .theme-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      border: none;
+      background: transparent;
+      color: var(--text-secondary);
+      padding: 6px 10px;
+      border-radius: 9px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background-color 0.16s ease, color 0.16s ease;
+    }
+
+    .theme-btn:hover { color: var(--text-primary); }
+    .theme-btn.is-active { background: var(--accent-soft); color: var(--accent-text); }
+
+    .btn-settings {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 14px;
+      border-radius: 12px;
+      border: 1px solid var(--border-color);
+      background: var(--accent-soft);
+      color: var(--accent-text);
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .btn-settings:hover { background: var(--accent-soft-hover); }
+
+    /* Search & Auto-Collect Panel */
+    .collector-panel {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 22px 24px;
+      box-shadow: var(--shadow-sm);
+      margin-bottom: 26px;
+    }
+
+    .panel-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+    }
+
+    .panel-title-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .step-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      border-radius: 9px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-size: 0.85rem;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    .panel-head h2 { margin: 0; font-size: 1.06rem; font-weight: 700; }
+    .panel-desc { margin: 2px 0 0; font-size: 0.84rem; color: var(--text-secondary); }
+
+    .region-status-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 12px;
+      border-radius: 999px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      background: var(--bg-subtle);
+      color: var(--text-secondary);
+      border: 1px solid var(--border-color);
+    }
+
+    .region-status-tag.is-locked {
+      background: var(--accent-soft);
+      color: var(--accent-text);
+      border-color: transparent;
+    }
+
+    .shop-input-row {
+      display: flex;
+      gap: 10px;
+      align-items: stretch;
+      flex-wrap: wrap;
+    }
+
+    .input-wrap { position: relative; flex: 1 1 280px; }
+
+    .input-icon {
+      position: absolute;
+      left: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-muted);
+      pointer-events: none;
+      display: flex;
+    }
+
+    .shop-input {
+      width: 100%;
+      padding: 12px 14px 12px 42px;
+      border-radius: var(--radius-md);
+      border: 1.5px solid var(--border-color);
+      background: var(--bg-input);
+      color: var(--text-primary);
+      font-size: 0.95rem;
+      outline: none;
+      transition: border-color 0.16s ease, box-shadow 0.16s ease;
+    }
+
+    .shop-input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-soft);
+    }
+
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 12px 20px;
+      border-radius: var(--radius-md);
+      border: none;
+      background: var(--accent);
+      color: #FFFFFF;
+      font-size: 0.93rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background-color 0.16s ease, opacity 0.16s ease;
+    }
+    .btn-primary:hover:not(:disabled) { background: var(--accent-hover); }
+    .btn-primary:disabled { opacity: 0.55; cursor: not-allowed; }
+
+    .btn-soft {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 10px 15px;
+      border-radius: var(--radius-sm);
+      border: 1px solid transparent;
+      background: var(--accent-soft);
+      color: var(--accent-text);
+      font-size: 0.86rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background-color 0.16s ease;
+    }
+    .btn-soft:hover:not(:disabled) { background: var(--accent-soft-hover); }
+    .btn-soft:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .btn-ghost {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 9px 14px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border-color);
+      background: transparent;
+      color: var(--text-secondary);
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .btn-ghost:hover { background: var(--bg-subtle); color: var(--text-primary); }
+
+    /* Region Filter Bar */
+    .region-filter-bar {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 16px;
+      padding-top: 14px;
+      border-top: 1px dashed var(--border-color);
+    }
+
+    .region-filter-label {
+      font-size: 0.84rem;
+      font-weight: 700;
+      color: var(--text-secondary);
+    }
+
+    .region-selector {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .region-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      min-width: 84px;
+      padding: 8px 14px;
+      border-radius: var(--radius-md);
+      border: 1.5px solid var(--border-color);
+      background: var(--bg-subtle);
+      color: var(--text-primary);
+      font-size: 0.88rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.16s ease;
+    }
+
+    .region-btn:hover {
+      border-color: var(--accent);
+      background: var(--accent-soft);
+      color: var(--accent-text);
+    }
+
+    .region-btn.is-selected {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #FFFFFF;
+      box-shadow: 0 4px 12px rgba(249, 115, 22, 0.28);
+    }
+
+    .region-btn .region-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--accent);
+    }
+    .region-btn.is-selected .region-dot { background: #FFFFFF; }
+
+    .collector-banner {
+      margin-top: 12px;
+      padding: 11px 14px;
+      border-radius: var(--radius-sm);
+      background: var(--bg-subtle);
+      color: var(--text-secondary);
+      font-size: 0.83rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .collector-banner.is-loading {
+      background: var(--accent-soft);
+      color: var(--accent-text);
+      font-weight: 600;
+    }
+
+    .collector-banner.is-success {
+      background: var(--success-bg);
+      color: var(--success-text);
+      border: 1px solid var(--success-border);
+      font-weight: 600;
+    }
+
+    .collector-banner.is-warning {
+      background: var(--warn-bg);
+      color: var(--warn-text);
+      border: 1px solid var(--warn-border);
+    }
+
+    /* Cards Section */
+    .cards-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+    }
+
+    .cards-title-row { display: flex; align-items: center; gap: 10px; }
+    .cards-title-row h2 { margin: 0; font-size: 1.12rem; font-weight: 700; }
+
+    .count-pill {
+      padding: 2px 10px;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      color: var(--accent-text);
+      font-size: 0.8rem;
+      font-weight: 700;
+    }
+
+    .filter-controls { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+    .filter-chip {
+      border: 1px solid var(--border-color);
+      background: var(--bg-card);
+      color: var(--text-secondary);
+      padding: 6px 12px;
+      border-radius: 999px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .filter-chip:hover { border-color: var(--accent); color: var(--accent-text); }
+    .filter-chip.is-active {
+      background: var(--accent-soft);
+      border-color: var(--accent);
+      color: var(--accent-text);
+    }
+
+    .shop-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 18px;
+    }
+
+    .shop-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 18px 20px;
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
+    }
+
+    .shop-card:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+      border-color: var(--border-strong);
+    }
+
+    .shop-card-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .badge-region {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 10px;
+      border-radius: 8px;
+      background: var(--accent-soft);
+      color: var(--accent-text);
+      font-size: 0.78rem;
+      font-weight: 700;
+    }
+
+    .badge-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      border: 1px solid transparent;
+    }
+
+    .badge-status.is-complete {
+      background: var(--success-bg);
+      color: var(--success-text);
+      border-color: var(--success-border);
+    }
+
+    .badge-status.is-plan-b {
+      background: var(--warn-bg);
+      color: var(--warn-text);
+      border-color: var(--warn-border);
+    }
+
+    .shop-card-title { margin: 0; font-size: 1.12rem; font-weight: 700; }
+    .shop-card-branch { margin: 2px 0 0; font-size: 0.85rem; color: var(--text-secondary); }
+
+    .plan-b-box {
+      padding: 10px 12px;
+      border-radius: var(--radius-sm);
+      background: var(--warn-bg);
+      border: 1px solid var(--warn-border);
+      color: var(--warn-text);
+      font-size: 0.82rem;
+      line-height: 1.45;
+    }
+
+    .menu-summary { display: flex; flex-wrap: wrap; gap: 6px; }
+
+    .menu-cat-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 9px;
+      border-radius: 8px;
+      background: var(--bg-subtle);
+      color: var(--text-primary);
+      font-size: 0.78rem;
+      font-weight: 600;
+    }
+    .menu-cat-chip .cat-icon { color: var(--accent); font-weight: 700; }
+
+    .shop-meta {
+      display: grid;
+      gap: 5px;
+      padding-top: 8px;
+      border-top: 1px dashed var(--border-color);
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+    }
+
+    .shop-meta-row { display: flex; justify-content: space-between; gap: 8px; }
+    .shop-meta-label { color: var(--text-muted); flex-shrink: 0; }
+    .shop-meta-value { text-align: right; word-break: break-word; }
+
+    .shop-card-footer {
+      margin-top: auto;
+      padding-top: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .social-links { display: flex; align-items: center; gap: 6px; }
+    .social-pill {
+      padding: 4px 8px;
+      border-radius: 7px;
+      background: var(--bg-subtle);
+      color: var(--text-secondary);
+      font-size: 0.74rem;
+      font-weight: 600;
+    }
+    .social-pill:hover { background: var(--accent-soft); color: var(--accent-text); }
+
+    /* Empty State */
+    .empty-state {
+      grid-column: 1 / -1;
+      background: var(--bg-card);
+      border: 1.5px dashed var(--border-strong);
+      border-radius: var(--radius-lg);
+      padding: 42px 24px;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .empty-icon {
+      width: 56px;
+      height: 56px;
+      border-radius: 16px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .empty-state h3 { margin: 0; font-size: 1.05rem; font-weight: 700; }
+    .empty-state p { margin: 0; max-width: 500px; font-size: 0.88rem; color: var(--text-secondary); }
+
+    /* Drawer & Modal Backdrop */
+    .overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 17, 21, 0.55);
+      backdrop-filter: blur(3px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      padding: 16px;
+    }
+    .overlay.is-open { display: flex; }
+    .overlay.is-drawer { justify-content: flex-end; padding: 0; }
+
+    .drawer-panel {
+      width: min(440px, 100%);
+      height: 100%;
+      background: var(--bg-card);
+      border-left: 1px solid var(--border-color);
+      box-shadow: var(--shadow-lg);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .modal-panel {
+      width: min(560px, 100%);
+      max-height: 90vh;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-lg);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .panel-header {
+      padding: 18px 20px;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .panel-header h3 { margin: 0; font-size: 1.06rem; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+
+    .btn-close {
+      width: 34px;
+      height: 34px;
+      border-radius: 10px;
+      border: 1px solid var(--border-color);
+      background: transparent;
+      color: var(--text-secondary);
+      font-size: 1.05rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .btn-close:hover { background: var(--bg-subtle); color: var(--text-primary); }
+
+    .panel-body {
+      padding: 20px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .panel-footer {
+      padding: 14px 20px;
+      border-top: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .setting-block {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      padding: 14px;
+      border-radius: var(--radius-md);
+      background: var(--bg-subtle);
+      border: 1px solid var(--border-color);
+    }
+    .setting-block h4 { margin: 0; font-size: 0.92rem; font-weight: 700; }
+    .setting-help { margin: 0; font-size: 0.8rem; color: var(--text-secondary); }
+
+    .field-control {
+      padding: 9px 12px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border-color);
+      background: var(--bg-input);
+      color: var(--text-primary);
+      font-size: 0.88rem;
+      outline: none;
+      width: 100%;
+    }
+    .field-control:focus { border-color: var(--accent); }
+
+    .region-manage-list { display: flex; flex-direction: column; gap: 8px; }
+    .region-manage-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: var(--radius-sm);
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      font-size: 0.86rem;
+      font-weight: 600;
+    }
+
+    /* Button-First Clarification Options */
+    .choice-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+    }
+
+    .choice-action-btn {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      width: 100%;
+      padding: 13px 16px;
+      border-radius: var(--radius-md);
+      border: 1.5px solid var(--border-color);
+      background: var(--bg-subtle);
+      color: var(--text-primary);
+      font-size: 0.92rem;
+      font-weight: 700;
+      text-align: left;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .choice-action-btn:hover {
+      border-color: var(--accent);
+      background: var(--accent-soft);
+      color: var(--accent-text);
+    }
+
+    .choice-action-btn.is-accent {
+      background: var(--accent-soft);
+      border-color: var(--accent);
+      color: var(--accent-text);
+    }
+
+    .choice-sub {
+      display: block;
+      font-size: 0.77rem;
+      font-weight: 500;
+      color: var(--text-secondary);
+      margin-top: 2px;
+    }
+
+    @media (max-width: 640px) {
+      .app-header { padding: 14px 16px; }
+      .collector-panel { padding: 18px 16px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="brand">
+        <div class="brand-icon" aria-hidden="true">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20" />
+            <path d="M8 7h8" />
+            <path d="M8 11h6" />
+          </svg>
+        </div>
+        <div class="brand-text">
+          <h1>菜單與即時價格收集</h1>
+          <div class="brand-subtitle">
+            <span class="status-dot-pill tabular-nums" id="localClockDisplay">本地時間載入中...</span>
+            <span class="status-dot-pill" id="serverStatusPill">偵測寫檔服務中...</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <div class="theme-switcher" role="group" aria-label="主題模式切換">
+          <button type="button" class="theme-btn" data-theme-option="system" title="跟隨系統偏好色彩">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <rect x="2" y="3" width="20" height="14" rx="2" />
+              <path d="M8 21h8" />
+              <path d="M12 17v4" />
+            </svg>
+            <span>系統</span>
+          </button>
+          <button type="button" class="theme-btn" data-theme-option="light" title="手動淺色模式">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="4" />
+              <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" />
+            </svg>
+            <span>淺色</span>
+          </button>
+          <button type="button" class="theme-btn" data-theme-option="dark" title="手動深色模式">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
+            </svg>
+            <span>深色</span>
+          </button>
+        </div>
+
+        <button type="button" class="btn-settings" id="openSettingsBtn" aria-haspopup="dialog">
+          <span aria-hidden="true">⚙️</span>
+          <span>設定</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Auto Search & Region Filter Panel -->
+    <section class="collector-panel" aria-labelledby="collectorTitle">
+      <div class="panel-head">
+        <div class="panel-title-group">
+          <span class="step-badge">🔍</span>
+          <div>
+            <h2 id="collectorTitle">搜尋店家（自動收集並整理為 Shop 檔案）</h2>
+            <p class="panel-desc">輸入店名按下搜尋後，會自動查詢並生成菜單卡片與頁面；僅在找不到或需確認時才跳出按鈕對話框。</p>
+          </div>
+        </div>
+        <div class="region-status-tag" id="regionStatusTag">篩選地區：全部地區</div>
+      </div>
+
+      <form class="shop-input-row" id="collectorForm" novalidate>
+        <div class="input-wrap">
+          <span class="input-icon" aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="8" />
+              <path d="m21 21-4.3-4.3" />
+            </svg>
+          </span>
+          <input
+            type="search"
+            id="shopNameInput"
+            class="shop-input"
+            placeholder="輸入店名搜尋（例如：路易莎咖啡、春水堂、50嵐...）"
+            autocomplete="off"
+          />
+        </div>
+        <button type="submit" class="btn-primary" id="searchShopBtn">
+          <span>搜尋並整理</span>
+        </button>
+      </form>
+
+      <!-- Region Filter Bar (Default: 全部 / 北部 / 中部 / 南部) -->
+      <div class="region-filter-bar">
+        <span class="region-filter-label">地區篩選：</span>
+        <div class="region-selector" id="regionButtons" role="group" aria-label="地區篩選按鈕"></div>
+      </div>
+
+      <div class="collector-banner" id="collectorBanner">
+        <span>搜尋流程：先比對現有清單，若尚未收錄將自動查詢並建立 <code>shops/*.html</code>；若查無明確標價，將依<strong>方案 B</strong> 跳出按鈕對話框請您選擇處理方式。</span>
+      </div>
+    </section>
+
+    <!-- Collected Shop Cards Container -->
+    <section aria-labelledby="cardsSectionTitle">
+      <div class="cards-toolbar">
+        <div class="cards-title-row">
+          <h2 id="cardsSectionTitle">店家菜單與價格清單</h2>
+          <span class="count-pill tabular-nums" id="shopCountPill">0 間</span>
+        </div>
+
+        <div class="filter-controls" id="statusFilterChips" role="group" aria-label="資料狀態篩選">
+          <button type="button" class="filter-chip is-active" data-filter-status="ALL">全部狀態</button>
+          <button type="button" class="filter-chip" data-filter-status="complete">價格完整</button>
+          <button type="button" class="filter-chip" data-filter-status="needs_info">依現場為準</button>
+        </div>
+      </div>
+
+      <div class="shop-grid" id="shopGrid"></div>
+    </section>
+  </div>
+
+  <!-- Settings Slide-over Drawer -->
+  <div class="overlay is-drawer" id="settingsOverlay" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+    <div class="drawer-panel">
+      <div class="panel-header">
+        <h3 id="settingsTitle"><span>⚙️</span> 系統與地區擴充設定</h3>
+        <button type="button" class="btn-close" id="closeSettingsBtn" aria-label="關閉設定">✕</button>
+      </div>
+      <div class="panel-body">
+        <div class="setting-block">
+          <h4>AI 自動搜尋引擎（Gemini API Key）</h4>
+          <p class="setting-help">設定後，按下搜尋即可自動上網查詢菜單、辨識菜單照片並直接寫入 <code>shops/*.html</code>（僅存於本機瀏覽器 <code>localStorage</code>）。</p>
+          <div style="display:flex;gap:8px;">
+            <input type="password" id="geminiKeyInput" class="field-control" placeholder="貼上 Gemini API Key（AIza...）" autocomplete="off" />
+            <button type="button" class="btn-soft" id="saveGeminiKeyBtn" style="white-space:nowrap;">儲存</button>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+            <span class="setting-help" id="geminiKeyStatus">尚未設定金鑰</span>
+            <button type="button" class="btn-ghost" id="clearGeminiKeyBtn" style="padding:4px 10px;font-size:0.76rem;">清除金鑰</button>
+          </div>
+        </div>
+
+        <div class="setting-block">
+          <h4>擴充自訂地區</h4>
+          <p class="setting-help">主畫面預設僅顯示「北部、中部、南部」。您可在此新增其他地區（如：東部、離島），並決定是否顯示於主畫面。</p>
+          <form id="addRegionForm" style="display:flex;gap:8px;">
+            <input type="text" id="newRegionInput" class="field-control" style="flex:1;" placeholder="輸入自訂地區（例如：東部）" maxlength="16" />
+            <button type="submit" class="btn-soft" style="white-space:nowrap;">新增地區</button>
+          </form>
+          <div class="region-manage-list" id="regionManageList"></div>
+        </div>
+
+        <div class="setting-block">
+          <h4>資料管理與刪除（本機 / 暫存）</h4>
+          <p class="setting-help">主畫面卡片不顯示刪除按鈕，保持公開瀏覽乾淨；您可於此管理或移除瀏覽器暫存草稿（連線本機伺服器時亦可刪除正式檔案）。</p>
+          <div class="region-manage-list" id="shopManageList"></div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px;">
+            <button type="button" class="btn-soft" id="exportJsonBtn">匯出 shops.json</button>
+            <button type="button" class="btn-ghost" id="clearLocalDraftsBtn">清除所有瀏覽器暫存</button>
+          </div>
+        </div>
+
+        <div class="setting-block">
+          <h4>寫檔連線與本地時間</h4>
+          <p class="setting-help">
+            本機寫檔服務：<strong id="settingsServerStatus">檢測中</strong>（執行 <code>start-collector.bat</code> 或 <code>node server.js</code> 開啟）<br />
+            目前本地時間：<span class="tabular-nums" id="settingsLocalTime">--</span>
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Button-First Clarification & Plan B Modal (Only shown when search fails / needs info) -->
+  <div class="overlay" id="clarifyModalOverlay" role="dialog" aria-modal="true" aria-labelledby="clarifyTitle">
+    <div class="modal-panel">
+      <div class="panel-header">
+        <h3 id="clarifyTitle">需要您確認或補充資料（方案 B）</h3>
+        <button type="button" class="btn-close" id="closeClarifyBtn" aria-label="關閉視窗">✕</button>
+      </div>
+      <div class="panel-body">
+        <div class="plan-b-box" id="clarifyReasonBox"></div>
+
+        <!-- Step 1: Region Buttons -->
+        <div class="setting-block">
+          <h4>1. 請點選此店家所屬地區：</h4>
+          <div class="region-selector" id="clarifyRegionButtons"></div>
+        </div>
+
+        <!-- Step 2: Action Buttons (Button-first!) -->
+        <div class="setting-block">
+          <h4>2. 請點選接下來的處理方式：</h4>
+          <div class="choice-grid">
+            <button type="button" class="choice-action-btn is-accent" id="btnClarifyUploadPhoto">
+              <div>
+                <span>📷 上傳菜單照片</span>
+                <span class="choice-sub">若已設定 AI 金鑰將自動辨識價格；否則隨方案 B 檔案保存照片</span>
+              </div>
+              <span>→</span>
+            </button>
+
+            <button type="button" class="choice-action-btn" id="btnClarifyShowPaste">
+              <div>
+                <span>🔗 貼上官網 / 菜單網址或文字</span>
+                <span class="choice-sub">點選後才展開貼上欄位，協助系統整理菜單</span>
+              </div>
+              <span>→</span>
+            </button>
+
+            <button type="button" class="choice-action-btn" id="btnClarifySavePlanB">
+              <div>
+                <span>📋 先標記「依現場為準（方案 B）」並建立 Shop 檔案</span>
+                <span class="choice-sub">不猜測任何價格，直接寫入商店卡片與詳細頁等待補件</span>
+              </div>
+              <span>✓</span>
+            </button>
+
+            <button type="button" class="choice-action-btn" id="btnClarifyOpenSettings" style="display:none;">
+              <div>
+                <span>⚙️ 前往設定 Gemini API Key（啟用自動上網搜尋）</span>
+                <span class="choice-sub">設定一次即可讓「搜尋」自動查找公開菜單並建檔</span>
+              </div>
+              <span>→</span>
+            </button>
+          </div>
+          <input type="file" id="clarifyPhotoInput" accept="image/*" style="display:none;" />
+        </div>
+
+        <!-- Hidden Paste Area (only revealed when user clicks the paste button) -->
+        <div class="setting-block" id="clarifyPasteArea" style="display:none;">
+          <h4>貼上補充網址或菜單內容</h4>
+          <input type="url" id="clarifyUrlInput" class="field-control" placeholder="官方 / FB / IG / 菜單圖片網址（選填）" />
+          <textarea id="clarifyTextInput" class="field-control" rows="3" placeholder="貼上菜單文字或分店備註（選填）"></textarea>
+          <div style="display:flex;justify-content:flex-end;gap:8px;">
+            <button type="button" class="btn-primary" id="btnClarifySubmitPaste">送出並自動整理建檔</button>
+          </div>
+        </div>
+
+        <!-- Hidden Photo Preview (only revealed when user picks a photo) -->
+        <div class="setting-block" id="clarifyPhotoPreviewBox" style="display:none;">
+          <h4>已選擇菜單照片</h4>
+          <img id="clarifyPhotoPreviewImg" alt="已上傳菜單照片預覽" style="max-height:200px;object-fit:contain;border-radius:10px;border:1px solid var(--border-color);" />
+          <div style="display:flex;justify-content:flex-end;gap:8px;">
+            <button type="button" class="btn-primary" id="btnClarifyProcessPhoto">確認使用此照片建檔</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel-footer">
+        <button type="button" class="btn-ghost" id="btnClarifyCancel">取消 / 換個店名重搜</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Local Draft Detail Preview Modal (for static/offline fallback) -->
+  <div class="overlay" id="detailPreviewOverlay" role="dialog" aria-modal="true" aria-labelledby="detailPreviewTitle">
+    <div class="modal-panel">
+      <div class="panel-header">
+        <h3 id="detailPreviewTitle">店家菜單詳細預覽</h3>
+        <button type="button" class="btn-close" id="closeDetailPreviewBtn" aria-label="關閉預覽">✕</button>
+      </div>
+      <div class="panel-body" id="detailPreviewBody"></div>
+      <div class="panel-footer">
+        <button type="button" class="btn-soft" id="backHomePreviewBtn">← 返回首頁清單</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="./data/shops-data.js"></script>
+  <script>
+    (function () {
+      'use strict';
+
+      const STORAGE_KEYS = {
+        THEME: 'menu_collector_theme',
+        CUSTOM_REGIONS: 'menu_collector_regions',
+        LOCAL_SHOPS: 'menu_collector_local_shops',
+        GEMINI_KEY: 'menu_collector_gemini_key'
+      };
+
+      const DEFAULT_REGIONS = ['北部', '中部', '南部'];
+
+      const state = {
+        themeMode: localStorage.getItem(STORAGE_KEYS.THEME) || 'system',
+        customRegions: loadJson(STORAGE_KEYS.CUSTOM_REGIONS, []),
+        geminiApiKey: localStorage.getItem(STORAGE_KEYS.GEMINI_KEY) || '',
+        serverOnline: false,
+        serverHasEnvKey: false,
+        filterRegion: 'ALL',
+        filterStatus: 'ALL',
+        filterQuery: '',
+        jsonShops: [],
+        localShops: loadJson(STORAGE_KEYS.LOCAL_SHOPS, []),
+        isCollecting: false,
+        clarifyContext: null
+      };
+
+      // ---------- Local Time Helpers (Strictly NO UTC) ----------
+      function pad2(n) { return String(n).padStart(2, '0'); }
+
+      function formatLocalISO(date = new Date()) {
+        const offsetMin = -date.getTimezoneOffset();
+        const sign = offsetMin >= 0 ? '+' : '-';
+        const absMin = Math.abs(offsetMin);
+        const tz = `${sign}${pad2(Math.floor(absMin / 60))}:${pad2(absMin % 60)}`;
+        return (
+          `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}` +
+          `T${pad2(date.getHours())}:${pad2(date.getMinutes())}:${pad2(date.getSeconds())}${tz}`
+        );
+      }
+
+      function formatLocalReadable(isoOrDate) {
+        const d = isoOrDate instanceof Date ? isoOrDate : new Date(isoOrDate);
+        if (Number.isNaN(d.getTime())) return String(isoOrDate || '--');
+        return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())} ${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+      }
+
+      function updateClock() {
+        const now = new Date();
+        const text = `${formatLocalReadable(now)}:${pad2(now.getSeconds())}`;
+        const clockEl = document.getElementById('localClockDisplay');
+        const settingsClockEl = document.getElementById('settingsLocalTime');
+        if (clockEl) clockEl.textContent = `本地時間 ${text}`;
+        if (settingsClockEl) settingsClockEl.textContent = formatLocalISO(now);
+      }
+
+      // ---------- Storage & Utilities ----------
+      function loadJson(key, fallback) {
+        try {
+          const raw = localStorage.getItem(key);
+          return raw ? JSON.parse(raw) : fallback;
+        } catch {
+          return fallback;
+        }
+      }
+
+      function saveJson(key, value) {
+        try { localStorage.setItem(key, JSON.stringify(value)); } catch {}
+      }
+
+      function escapeHtml(str) {
+        return String(str ?? '')
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+      }
+
+      function setBanner(type, htmlContent) {
+        const banner = document.getElementById('collectorBanner');
+        banner.className = 'collector-banner' + (type ? ` is-${type}` : '');
+        banner.innerHTML = htmlContent;
+      }
+
+      // ---------- Theme Management ----------
+      const mediaDark = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
+
+      function applyTheme(mode) {
+        state.themeMode = mode;
+        try { localStorage.setItem(STORAGE_KEYS.THEME, mode); } catch {}
+        const resolved = mode === 'system' ? (mediaDark && mediaDark.matches ? 'dark' : 'light') : mode;
+        document.documentElement.setAttribute('data-theme', resolved);
+        document.documentElement.setAttribute('data-theme-mode', mode);
+        document.querySelectorAll('[data-theme-option]').forEach((btn) => {
+          btn.classList.toggle('is-active', btn.dataset.themeOption === mode);
+        });
+      }
+
+      if (mediaDark && mediaDark.addEventListener) {
+        mediaDark.addEventListener('change', () => {
+          if (state.themeMode === 'system') applyTheme('system');
+        });
+      }
+
+      // ---------- Server Health & Settings Status ----------
+      async function checkServerHealth() {
+        const pill = document.getElementById('serverStatusPill');
+        const settingsStatus = document.getElementById('settingsServerStatus');
+        if (window.location.protocol === 'file:') {
+          state.serverOnline = false;
+          pill.textContent = '靜態預覽模式（file://）';
+          pill.classList.remove('is-online');
+          if (settingsStatus) settingsStatus.textContent = '未連線（請雙擊 start-collector.bat 開啟自動寫檔）';
+          return;
+        }
+        try {
+          const res = await fetch('./api/health', { cache: 'no-store' });
+          if (!res.ok) throw new Error('offline');
+          const data = await res.json();
+          state.serverOnline = Boolean(data.ok);
+          state.serverHasEnvKey = Boolean(data.hasEnvKey);
+          pill.textContent = '本機自動寫檔已連線';
+          pill.classList.add('is-online');
+          if (settingsStatus) settingsStatus.textContent = '已連線（可自動寫入 data/shops.json 與 shops/*.html）';
+        } catch {
+          state.serverOnline = false;
+          pill.textContent = '純靜態瀏覽模式';
+          pill.classList.remove('is-online');
+          if (settingsStatus) settingsStatus.textContent = '純靜態模式（無後端寫檔服務）';
+        }
+      }
+
+      function updateGeminiKeyUI() {
+        const input = document.getElementById('geminiKeyInput');
+        const status = document.getElementById('geminiKeyStatus');
+        if (state.geminiApiKey) {
+          input.value = state.geminiApiKey;
+          status.textContent = '已儲存本機 Gemini API Key（將用於自動上網搜尋與菜單照片辨識）';
+        } else if (state.serverHasEnvKey) {
+          input.value = '';
+          status.textContent = '本機伺服器已透過環境變數設定 GEMINI_API_KEY';
+        } else {
+          input.value = '';
+          status.textContent = '尚未設定金鑰（搜尋未知店家時會引導使用方案 B 按鈕）';
+        }
+      }
+
+      // ---------- Region Filter & Settings ----------
+      function getVisibleRegions() {
+        const customPinned = state.customRegions
+          .filter((r) => r && r.visibleOnHome && r.name)
+          .map((r) => r.name);
+        return [...DEFAULT_REGIONS, ...customPinned];
+      }
+
+      function getAllAvailableRegions() {
+        const customAll = state.customRegions.filter((r) => r && r.name).map((r) => r.name);
+        return Array.from(new Set([...DEFAULT_REGIONS, ...customAll]));
+      }
+
+      function updateSearchStatusTag() {
+        const statusTag = document.getElementById('regionStatusTag');
+        const query = state.filterQuery.trim();
+        const regionLabel = state.filterRegion === 'ALL' ? '全部地區' : state.filterRegion;
+        if (query) {
+          statusTag.textContent = `搜尋「${query}」· ${regionLabel}`;
+          statusTag.classList.add('is-locked');
+        } else {
+          statusTag.textContent = `篩選地區：${regionLabel}`;
+          statusTag.classList.toggle('is-locked', state.filterRegion !== 'ALL');
+        }
+      }
+
+      function renderRegionButtons() {
+        const container = document.getElementById('regionButtons');
+        const regions = ['ALL', ...getVisibleRegions()];
+
+        container.innerHTML = regions
+          .map((region) => {
+            const isSelected = state.filterRegion === region;
+            const label = region === 'ALL' ? '全部' : region;
+            return `
+              <button
+                type="button"
+                class="region-btn ${isSelected ? 'is-selected' : ''}"
+                data-region="${escapeHtml(region)}"
+                aria-pressed="${isSelected ? 'true' : 'false'}"
+              >
+                <span class="region-dot" aria-hidden="true"></span>
+                <span>${escapeHtml(label)}</span>
+              </button>
+            `;
+          })
+          .join('');
+
+        container.querySelectorAll('.region-btn').forEach((btn) => {
+          btn.addEventListener('click', () => {
+            state.filterRegion = btn.dataset.region;
+            renderRegionButtons();
+            renderShopCards();
+          });
+        });
+
+        updateSearchStatusTag();
+      }
+
+      function renderRegionManageList() {
+        const list = document.getElementById('regionManageList');
+        const defaultsHtml = DEFAULT_REGIONS.map(
+          (name) => `
+            <div class="region-manage-item">
+              <span>${escapeHtml(name)}</span>
+              <span style="font-size:0.75rem;color:var(--text-muted);">預設核心地區</span>
+            </div>
+          `
+        ).join('');
+
+        const customsHtml = state.customRegions
+          .map(
+            (item, idx) => `
+              <div class="region-manage-item">
+                <span>${escapeHtml(item.name)}</span>
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <label style="display:inline-flex;align-items:center;gap:4px;font-size:0.76rem;color:var(--text-secondary);cursor:pointer;">
+                    <input type="checkbox" data-toggle-region="${idx}" ${item.visibleOnHome ? 'checked' : ''} />
+                    主畫面顯示
+                  </label>
+                  <button type="button" class="btn-ghost" style="padding:3px 8px;font-size:0.75rem;" data-delete-region="${idx}">移除</button>
+                </div>
+              </div>
+            `
+          )
+          .join('');
+
+        list.innerHTML = defaultsHtml + customsHtml;
+
+        list.querySelectorAll('[data-toggle-region]').forEach((cb) => {
+          cb.addEventListener('change', (e) => {
+            const idx = Number(e.target.dataset.toggleRegion);
+            state.customRegions[idx].visibleOnHome = e.target.checked;
+            saveJson(STORAGE_KEYS.CUSTOM_REGIONS, state.customRegions);
+            if (!e.target.checked && state.filterRegion === state.customRegions[idx].name) {
+              state.filterRegion = 'ALL';
+            }
+            renderRegionButtons();
+            renderShopCards();
+          });
+        });
+
+        list.querySelectorAll('[data-delete-region]').forEach((btn) => {
+          btn.addEventListener('click', (e) => {
+            const idx = Number(e.target.dataset.deleteRegion);
+            const removed = state.customRegions.splice(idx, 1)[0];
+            saveJson(STORAGE_KEYS.CUSTOM_REGIONS, state.customRegions);
+            if (removed && state.filterRegion === removed.name) {
+              state.filterRegion = 'ALL';
+            }
+            renderRegionManageList();
+            renderRegionButtons();
+            renderShopCards();
+          });
+        });
+      }
+
+      // ---------- Data Loading & Merging ----------
+      async function loadShopsData() {
+        try {
+          const res = await fetch('./data/shops.json', { cache: 'no-store' });
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          const payload = await res.json();
+          state.jsonShops = Array.isArray(payload.shops) ? payload.shops : [];
+        } catch {
+          if (window.__SHOPS_DATA__ && Array.isArray(window.__SHOPS_DATA__.shops)) {
+            state.jsonShops = window.__SHOPS_DATA__.shops;
+          } else {
+            state.jsonShops = [];
+          }
+        }
+        renderShopCards();
+      }
+
+      function getAllShopsSorted() {
+        const combined = [
+          ...state.localShops.map((s) => ({ ...s, _isLocalDraft: true })),
+          ...state.jsonShops.map((s) => ({ ...s, _isLocalDraft: false }))
+        ];
+        return combined.sort((a, b) => new Date(b.fetchedAt || 0).getTime() - new Date(a.fetchedAt || 0).getTime());
+      }
+
+      function getFilteredShops(queryOverride = null) {
+        const allShops = getAllShopsSorted();
+        const query = (queryOverride !== null ? queryOverride : state.filterQuery).trim().toLowerCase();
+        return allShops.filter((shop) => {
+          const matchRegion = state.filterRegion === 'ALL' || shop.region === state.filterRegion;
+          if (!matchRegion) return false;
+          const matchStatus = state.filterStatus === 'ALL' || shop.status === state.filterStatus;
+          if (!matchStatus) return false;
+          if (!query) return true;
+          const haystack = [
+            shop.name,
+            shop.branch,
+            shop.region,
+            shop.updateNote,
+            ...(Array.isArray(shop.menu)
+              ? shop.menu.flatMap((c) => [c.category, ...(c.items || []).map((i) => i.name)])
+              : [])
+          ]
+            .join(' ')
+            .toLowerCase();
+          return haystack.includes(query);
+        });
+      }
+
+      function summarizeMenuCategory(cat) {
+        const items = Array.isArray(cat.items) ? cat.items : [];
+        const prices = [];
+        items.forEach((i) => {
+          if (i && i.prices && typeof i.prices === 'object') {
+            Object.values(i.prices).forEach((v) => {
+              if (typeof v === 'number' && !Number.isNaN(v)) prices.push(v);
+            });
+          } else if (i && typeof i.price === 'number' && !Number.isNaN(i.price)) {
+            prices.push(i.price);
+          }
+        });
+        let priceLabel = '';
+        if (prices.length > 0) {
+          const min = Math.min(...prices);
+          const max = Math.max(...prices);
+          priceLabel = min === max ? `$${min}` : `$${min}–$${max}`;
+        }
+        return { category: cat.category || '未分類', count: items.length, priceLabel };
+      }
+
+      function renderShopCards() {
+        const grid = document.getElementById('shopGrid');
+        const countPill = document.getElementById('shopCountPill');
+        const filtered = getFilteredShops();
+
+        countPill.textContent = `${filtered.length} 間`;
+
+        if (filtered.length === 0) {
+          const trimmedQuery = state.filterQuery.trim();
+          grid.innerHTML = `
+            <div class="empty-state">
+              <div class="empty-icon" aria-hidden="true">
+                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="11" cy="11" r="8" />
+                  <path d="m21 21-4.3-4.3" />
+                </svg>
+              </div>
+              <h3>${trimmedQuery ? `資料庫尚未收錄「${escapeHtml(trimmedQuery)}」` : '尚未有符合條件的店家資料'}</h3>
+              <p>
+                ${
+                  trimmedQuery
+                    ? '按下上方「搜尋並整理」按鈕，系統將自動上網查找店家菜單、營業時間與官方連結並建立 Shop 檔案。'
+                    : '請於上方搜尋欄輸入店名，按下「搜尋並整理」即可自動收集並置頂顯示。'
+                }
+              </p>
+              ${
+                trimmedQuery
+                  ? `<button type="button" class="btn-primary" id="emptyAutoCollectBtn">🔍 立即自動搜尋「${escapeHtml(trimmedQuery)}」</button>`
+                  : ''
+              }
+            </div>
+          `;
+          const autoBtn = document.getElementById('emptyAutoCollectBtn');
+          if (autoBtn) {
+            autoBtn.addEventListener('click', () => triggerAutoCollect(trimmedQuery));
+          }
+          return;
+        }
+
+        grid.innerHTML = filtered
+          .map((shop) => {
+            const isPlanB = shop.status === 'needs_info';
+            const categories = Array.isArray(shop.menu) ? shop.menu.map(summarizeMenuCategory) : [];
+            const links = shop.links || {};
+            const hasDetailFile = Boolean(shop.detailPath) && !shop._isLocalDraft;
+
+            const socialLinksHtml = [
+              links.official ? `<a class="social-pill" href="${escapeHtml(links.official)}" target="_blank" rel="noopener noreferrer">官網</a>` : '',
+              links.facebook ? `<a class="social-pill" href="${escapeHtml(links.facebook)}" target="_blank" rel="noopener noreferrer">FB</a>` : '',
+              links.instagram ? `<a class="social-pill" href="${escapeHtml(links.instagram)}" target="_blank" rel="noopener noreferrer">IG</a>` : ''
+            ]
+              .filter(Boolean)
+              .join('');
+
+            const detailActionHtml = hasDetailFile
+              ? `<a class="btn-soft" href="${escapeHtml(shop.detailPath)}">查看詳細菜單 →</a>`
+              : `<button type="button" class="btn-soft" data-preview-id="${escapeHtml(shop.id)}">查看詳細預覽 →</button>`;
+
+            return `
+              <article class="shop-card">
+                <div class="shop-card-top">
+                  <span class="badge-region">📍 ${escapeHtml(shop.region || '未分類')}</span>
+                  <span class="badge-status ${isPlanB ? 'is-plan-b' : 'is-complete'}">
+                    ${isPlanB ? '方案 B：依現場為準' : '菜單價格完整'}
+                  </span>
+                </div>
+
+                <div>
+                  <h3 class="shop-card-title">${escapeHtml(shop.name)}</h3>
+                  <p class="shop-card-branch">${escapeHtml(shop.branch || '尚未指定分店')}</p>
+                </div>
+
+                ${
+                  isPlanB
+                    ? `<div class="plan-b-box">
+                        <div>依現場為準（方案 B）：目前尚缺統一公開標價，品項與價格依現場為準（切勿自行估算）。</div>
+                        ${
+                          state.serverOnline && !shop._isLocalDraft
+                            ? `<button type="button" class="btn-soft" style="margin-top:8px;padding:5px 10px;font-size:0.77rem;" data-update-planb-id="${escapeHtml(shop.id)}">📷 補充 / 更新價格</button>`
+                            : ''
+                        }
+                      </div>`
+                    : ''
+                }
+
+                <div class="menu-summary">
+                  ${
+                    categories.length > 0
+                      ? categories
+                          .map(
+                            (c) => `
+                              <span class="menu-cat-chip tabular-nums">
+                                <span class="cat-icon">●</span>
+                                <span>${escapeHtml(c.category)}</span>
+                                <span>${c.count}項</span>
+                                ${c.priceLabel ? `<span>${escapeHtml(c.priceLabel)}</span>` : ''}
+                              </span>
+                            `
+                          )
+                          .join('')
+                      : `<span class="menu-cat-chip">待補充菜單品項</span>`
+                  }
+                </div>
+
+                <div class="shop-meta">
+                  <div class="shop-meta-row">
+                    <span class="shop-meta-label">營業時間</span>
+                    <span class="shop-meta-value">${escapeHtml(shop.businessHours || '待補充')}</span>
+                  </div>
+                  <div class="shop-meta-row">
+                    <span class="shop-meta-label">抓取時間</span>
+                    <span class="shop-meta-value tabular-nums">${escapeHtml(formatLocalReadable(shop.fetchedAt))}</span>
+                  </div>
+                  <div class="shop-meta-row">
+                    <span class="shop-meta-label">更新備註</span>
+                    <span class="shop-meta-value">${escapeHtml(shop.updateNote || '--')}</span>
+                  </div>
+                </div>
+
+                <div class="shop-card-footer">
+                  <div class="social-links">
+                    ${socialLinksHtml || '<span style="font-size:0.75rem;color:var(--text-muted);">未附社群連結</span>'}
+                  </div>
+                  ${detailActionHtml}
+                </div>
+              </article>
+            `;
+          })
+          .join('');
+
+        grid.querySelectorAll('[data-preview-id]').forEach((btn) => {
+          btn.addEventListener('click', () => {
+            const all = getAllShopsSorted();
+            const target = all.find((s) => s.id === btn.dataset.previewId);
+            if (target) openDetailPreview(target);
+          });
+        });
+
+        grid.querySelectorAll('[data-update-planb-id]').forEach((btn) => {
+          btn.addEventListener('click', () => {
+            const all = getAllShopsSorted();
+            const target = all.find((s) => s.id === btn.dataset.updatePlanbId);
+            if (!target) return;
+            openClarifyModal({
+              query: target.name,
+              updateShopId: target.id,
+              reasonCode: 'update_existing',
+              reason: `正在補充更新「${target.name}（${target.region}）」的菜單與價格：請點選上傳菜單照片或貼上官網／文字進行覆蓋更新。`,
+              regionCandidates: getAllAvailableRegions(),
+              partialShop: target
+            });
+          });
+        });
+      }
+
+      function renderShopManageList() {
+        const list = document.getElementById('shopManageList');
+        if (!list) return;
+        const all = getAllShopsSorted();
+        if (all.length === 0) {
+          list.innerHTML = '<p class="setting-help">目前尚無任何店家資料。</p>';
+          return;
+        }
+
+        list.innerHTML = all
+          .map((shop) => {
+            const canDelete = shop._isLocalDraft || state.serverOnline;
+            const tag = shop._isLocalDraft ? '瀏覽器暫存' : '正式資料';
+            return `
+              <div class="region-manage-item">
+                <div style="min-width:0;">
+                  <div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(shop.name)}（${escapeHtml(shop.region)}）</div>
+                  <div style="font-size:0.73rem;color:var(--text-muted);">${tag}</div>
+                </div>
+                ${
+                  canDelete
+                    ? `<button type="button" class="btn-ghost" style="padding:4px 10px;font-size:0.76rem;flex-shrink:0;" data-manage-delete-id="${escapeHtml(shop.id)}" data-is-draft="${shop._isLocalDraft ? '1' : '0'}" data-shop-name="${escapeHtml(shop.name)}">刪除</button>`
+                    : `<span style="font-size:0.74rem;color:var(--text-muted);flex-shrink:0;">靜態保護</span>`
+                }
+              </div>
+            `;
+          })
+          .join('');
+
+        list.querySelectorAll('[data-manage-delete-id]').forEach((btn) => {
+          btn.addEventListener('click', async () => {
+            const id = btn.dataset.manageDeleteId;
+            const isDraft = btn.dataset.isDraft === '1';
+            const shopName = btn.dataset.shopName || '此店家';
+            if (!window.confirm(`確定要刪除「${shopName}」嗎？`)) return;
+
+            if (isDraft) {
+              state.localShops = state.localShops.filter((s) => s.id !== id);
+              saveJson(STORAGE_KEYS.LOCAL_SHOPS, state.localShops);
+              renderShopCards();
+              renderShopManageList();
+              setBanner('', `<span>已從瀏覽器暫存移除「${escapeHtml(shopName)}」。</span>`);
+              return;
+            }
+
+            if (state.serverOnline) {
+              const res = await fetch('./api/delete-shop', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id })
+              });
+              if (res.ok) {
+                await loadShopsData();
+                renderShopManageList();
+                setBanner('', `<span>已刪除「${escapeHtml(shopName)}」及其詳細頁面檔案。</span>`);
+              }
+            }
+          });
+        });
+      }
+
+      // ---------- Auto Collection & Button-First Clarification Dialog ----------
+      async function triggerAutoCollect(query, extra = {}) {
+        const cleanQuery = String(query || '').trim();
+        if (!cleanQuery || state.isCollecting) return;
+
+        state.isCollecting = true;
+        const searchBtn = document.getElementById('searchShopBtn');
+        searchBtn.disabled = true;
+        searchBtn.innerHTML = '<span>搜尋整理中...</span>';
+        setBanner('loading', `<span>正在自動搜尋「<strong>${escapeHtml(cleanQuery)}</strong>」的完整菜單、價格、營業時間與官方連結...</span>`);
+
+        try {
+          if (state.serverOnline) {
+            const res = await fetch('./api/collect', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                query: cleanQuery,
+                regionHint: state.filterRegion,
+                apiKey: state.geminiApiKey,
+                ...extra
+              })
+            });
+            const result = await res.json();
+
+            if (result.action === 'created' && result.shop) {
+              await loadShopsData();
+              state.filterQuery = '';
+              document.getElementById('shopNameInput').value = '';
+              updateSearchStatusTag();
+              renderShopCards();
+              setBanner(
+                'success',
+                `<span>已自動整理「<strong>${escapeHtml(result.shop.name)}</strong>」並寫入 <code>${escapeHtml(result.shop.detailPath)}</code>，新卡片已置頂！</span>`
+              );
+              return;
+            }
+
+            if (result.action === 'needs_clarification') {
+              openClarifyModal({
+                query: cleanQuery,
+                reason: result.reason,
+                reasonCode: result.reasonCode,
+                regionCandidates: result.regionCandidates || getAllAvailableRegions(),
+                partialShop: result.partialShop || {
+                  name: cleanQuery,
+                  region: state.filterRegion !== 'ALL' ? state.filterRegion : '北部',
+                  branch: '待確認分店',
+                  status: 'needs_info',
+                  businessHours: '待補充',
+                  updateNote: '方案 B（依現場為準）：網路尚缺完整菜單或統一標價',
+                  links: { official: '', facebook: '', instagram: '' },
+                  menu: []
+                }
+              });
+              setBanner('warning', `<span>「${escapeHtml(cleanQuery)}」需要您透過按鈕確認或補充資訊（方案 B）。</span>`);
+              return;
+            }
+
+            throw new Error(result.error || '未知回應');
+          } else {
+            // Static / file:// mode without local Node server
+            openClarifyModal({
+              query: cleanQuery,
+              reasonCode: 'static_mode',
+              reason:
+                '目前為純靜態瀏覽模式（未連線至本機寫檔伺服器）。若要讓網頁自動上網整理並直接寫入 shops/*.html，請雙擊執行專案中的 start-collector.bat；或先使用下方按鈕暫存方案 B 預覽卡片。',
+              regionCandidates: getAllAvailableRegions(),
+              partialShop: {
+                name: cleanQuery,
+                region: state.filterRegion !== 'ALL' ? state.filterRegion : '北部',
+                branch: '待確認分店',
+                status: 'needs_info',
+                businessHours: '待補充',
+                updateNote: '方案 B（依現場為準）：網路尚缺完整菜單或統一標價',
+                links: { official: '', facebook: '', instagram: '' },
+                menu: []
+              }
+            });
+            setBanner('warning', `<span>純靜態模式下無法直接寫入本機檔案，請用對話框按鈕選擇處理方式或啟動 <code>start-collector.bat</code>。</span>`);
+          }
+        } catch (err) {
+          setBanner('warning', `<span>自動搜尋過程發生錯誤：${escapeHtml(err.message)}</span>`);
+        } finally {
+          state.isCollecting = false;
+          searchBtn.disabled = false;
+          searchBtn.innerHTML = '<span>搜尋並整理</span>';
+        }
+      }
+
+      function renderClarifyRegionButtons() {
+        if (!state.clarifyContext) return;
+        const container = document.getElementById('clarifyRegionButtons');
+        const regions = getAllAvailableRegions();
+        const selected = state.clarifyContext.selectedRegion;
+
+        container.innerHTML = regions
+          .map((r) => {
+            const isSel = selected === r;
+            return `
+              <button type="button" class="region-btn ${isSel ? 'is-selected' : ''}" data-clarify-region="${escapeHtml(r)}">
+                <span class="region-dot" aria-hidden="true"></span>
+                <span>${escapeHtml(r)}</span>
+              </button>
+            `;
+          })
+          .join('');
+
+        container.querySelectorAll('[data-clarify-region]').forEach((btn) => {
+          btn.addEventListener('click', () => {
+            state.clarifyContext.selectedRegion = btn.dataset.clarifyRegion;
+            state.clarifyContext.partialShop.region = btn.dataset.clarifyRegion;
+            renderClarifyRegionButtons();
+          });
+        });
+      }
+
+      function openClarifyModal(ctx) {
+        state.clarifyContext = {
+          ...ctx,
+          selectedRegion: ctx.partialShop?.region || (state.filterRegion !== 'ALL' ? state.filterRegion : '北部'),
+          imageBase64: '',
+          imageMimeType: ''
+        };
+
+        document.getElementById('clarifyTitle').textContent = `「${ctx.query}」— 確認與方案 B 處理`;
+        document.getElementById('clarifyReasonBox').textContent = ctx.reason;
+        document.getElementById('clarifyPasteArea').style.display = 'none';
+        document.getElementById('clarifyPhotoPreviewBox').style.display = 'none';
+        document.getElementById('clarifyUrlInput').value = ctx.partialShop?.links?.official || '';
+        document.getElementById('clarifyTextInput').value = '';
+        document.getElementById('clarifyPhotoInput').value = '';
+
+        const showSettingsBtn = !state.geminiApiKey && !state.serverHasEnvKey && state.serverOnline;
+        document.getElementById('btnClarifyOpenSettings').style.display = showSettingsBtn ? 'flex' : 'none';
+
+        renderClarifyRegionButtons();
+        document.getElementById('clarifyModalOverlay').classList.add('is-open');
+      }
+
+      function closeClarifyModal() {
+        document.getElementById('clarifyModalOverlay').classList.remove('is-open');
+      }
+
+      async function savePlanBRecordFromClarify(extraNote = '') {
+        if (!state.clarifyContext) return;
+        const ctx = state.clarifyContext;
+        const shop = {
+          ...ctx.partialShop,
+          name: ctx.query,
+          region: ctx.selectedRegion,
+          status: 'needs_info',
+          fetchedAt: formatLocalISO(new Date()),
+          updateNote: extraNote || ctx.partialShop.updateNote || '方案 B（依現場為準）：品項與價格依現場為準'
+        };
+
+        if (state.serverOnline) {
+          const res = await fetch('./api/save-shop', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              shop,
+              updateShopId: ctx.updateShopId || '',
+              imageBase64: ctx.imageBase64 || '',
+              imageMimeType: ctx.imageMimeType || ''
+            })
+          });
+          const data = await res.json();
+          if (data.action === 'created' && data.shop) {
+            closeClarifyModal();
+            await loadShopsData();
+            state.filterQuery = '';
+            document.getElementById('shopNameInput').value = '';
+            updateSearchStatusTag();
+            renderShopCards();
+            setBanner(
+              'success',
+              `<span>已為「<strong>${escapeHtml(data.shop.name)}</strong>」建立方案 B 檔案（<code>${escapeHtml(data.shop.detailPath)}</code>），卡片已置頂！</span>`
+            );
+            return;
+          }
+        }
+
+        // Fallback local browser draft if static/file://
+        const slug = `shop-${Date.now().toString(36)}`;
+        const localRecord = { ...shop, id: slug, slug, detailPath: `./shops/${slug}.html` };
+        state.localShops.unshift(localRecord);
+        saveJson(STORAGE_KEYS.LOCAL_SHOPS, state.localShops);
+        closeClarifyModal();
+        state.filterQuery = '';
+        document.getElementById('shopNameInput').value = '';
+        updateSearchStatusTag();
+        renderShopCards();
+        setBanner('warning', `<span>已暫存「${escapeHtml(shop.name)}」方案 B 預覽卡片於瀏覽器中（可於設定匯出 shops.json）。</span>`);
+      }
+
+      function openDetailPreview(shop) {
+        const body = document.getElementById('detailPreviewBody');
+        document.getElementById('detailPreviewTitle').textContent = `${shop.name}（${shop.region}）`;
+        const menuHtml = (shop.menu || [])
+          .map((cat) => {
+            const sizeLabels = Array.isArray(cat.sizeLabels) && cat.sizeLabels.length > 0 ? cat.sizeLabels : null;
+            const subheadHtml = sizeLabels
+              ? `<div style="display:flex;justify-content:space-between;font-size:0.76rem;font-weight:700;color:var(--text-secondary);padding-bottom:4px;border-bottom:1px solid var(--border-color);"><span>品項（同類以 / 分隔）</span><span class="tabular-nums">${escapeHtml(sizeLabels.join(' / '))}</span></div>`
+              : '';
+            const itemsHtml = (cat.items || [])
+              .map((item) => {
+                let priceText = '依現場為準';
+                if (sizeLabels && item.prices && typeof item.prices === 'object') {
+                  const hasAny = sizeLabels.some((sz) => typeof item.prices[sz] === 'number');
+                  if (hasAny) {
+                    priceText = sizeLabels.map((sz) => (typeof item.prices[sz] === 'number' ? `$${item.prices[sz]}` : '—')).join(' / ');
+                  }
+                } else if (typeof item.price === 'number') {
+                  priceText = `$${item.price}`;
+                }
+                return `
+                  <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px dashed var(--border-color);">
+                    <span>${escapeHtml(item.name)}</span>
+                    <span class="tabular-nums" style="font-weight:700;color:var(--accent-text);">${escapeHtml(priceText)}</span>
+                  </div>
+                `;
+              })
+              .join('');
+            return `<div class="setting-block"><h4>${escapeHtml(cat.category)}</h4>${subheadHtml}${itemsHtml || '<p class="setting-help">此分類尚無品項</p>'}</div>`;
+          })
+          .join('');
+
+        body.innerHTML = `
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <span class="badge-region">📍 ${escapeHtml(shop.region)} · ${escapeHtml(shop.branch)}</span>
+            <span class="badge-status ${shop.status === 'needs_info' ? 'is-plan-b' : 'is-complete'}">
+              ${shop.status === 'needs_info' ? '方案 B：依現場為準' : '菜單價格完整'}
+            </span>
+          </div>
+          ${shop.status === 'needs_info' ? '<div class="plan-b-box">依現場為準（方案 B）：目前尚缺完整公開菜單或統一標價，品項與價格依現場為準（切勿自行估算）。</div>' : ''}
+          <div class="shop-meta" style="border-top:none;padding-top:0;">
+            <div class="shop-meta-row"><span class="shop-meta-label">營業時間</span><span>${escapeHtml(shop.businessHours)}</span></div>
+            <div class="shop-meta-row"><span class="shop-meta-label">抓取時間</span><span class="tabular-nums">${escapeHtml(formatLocalReadable(shop.fetchedAt))}</span></div>
+            <div class="shop-meta-row"><span class="shop-meta-label">更新備註</span><span>${escapeHtml(shop.updateNote)}</span></div>
+          </div>
+          ${menuHtml || '<p class="setting-help">尚未建立菜單品項，價格依現場為準。</p>'}
+        `;
+        document.getElementById('detailPreviewOverlay').classList.add('is-open');
+      }
+
+      // ---------- Export JSON Backup ----------
+      function exportShopsJson() {
+        const exportPayload = {
+          schemaVersion: '1.0.0',
+          module: 'menu-price-collector',
+          currency: 'TWD',
+          updatedAt: formatLocalISO(new Date()),
+          defaultRegions: DEFAULT_REGIONS,
+          customRegions: state.customRegions,
+          shops: getAllShopsSorted().map(({ _isLocalDraft, ...clean }) => clean)
+        };
+        const blob = new Blob([JSON.stringify(exportPayload, null, 2)], { type: 'application/json;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'shops.json';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+      }
+
+      // ---------- Event Listeners ----------
+      document.querySelectorAll('[data-theme-option]').forEach((btn) => {
+        btn.addEventListener('click', () => applyTheme(btn.dataset.themeOption));
+      });
+
+      const shopNameInput = document.getElementById('shopNameInput');
+      shopNameInput.addEventListener('input', (e) => {
+        state.filterQuery = e.target.value;
+        updateSearchStatusTag();
+        renderShopCards();
+      });
+
+      document.getElementById('collectorForm').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const query = shopNameInput.value.trim();
+        if (!query) {
+          setBanner('warning', '<span>請先輸入想搜尋或建立的店名。</span>');
+          shopNameInput.focus();
+          return;
+        }
+        const existingMatches = getFilteredShops(query);
+        if (existingMatches.length > 0) {
+          setBanner(
+            '',
+            `<span>已找到 <strong>${existingMatches.length}</strong> 筆符合「${escapeHtml(query)}」的店家，您可使用地區按鈕篩選。</span>` +
+              `<button type="button" class="btn-soft" id="bannerForceCollectBtn" style="padding:5px 11px;font-size:0.78rem;">🔍 仍要自動搜尋並新增分店</button>`
+          );
+          document.getElementById('bannerForceCollectBtn').addEventListener('click', () => triggerAutoCollect(query));
+          return;
+        }
+        triggerAutoCollect(query);
+      });
+
+      document.querySelectorAll('[data-filter-status]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          state.filterStatus = btn.dataset.filterStatus;
+          document.querySelectorAll('[data-filter-status]').forEach((b) => b.classList.toggle('is-active', b === btn));
+          renderShopCards();
+        });
+      });
+
+      // Clarification Dialog Button Actions
+      document.getElementById('btnClarifyUploadPhoto').addEventListener('click', () => {
+        document.getElementById('clarifyPhotoInput').click();
+      });
+
+      document.getElementById('clarifyPhotoInput').addEventListener('change', (e) => {
+        const file = e.target.files?.[0];
+        if (!file || !state.clarifyContext) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+          state.clarifyContext.imageBase64 = reader.result;
+          state.clarifyContext.imageMimeType = file.type || 'image/jpeg';
+          document.getElementById('clarifyPhotoPreviewImg').src = reader.result;
+          document.getElementById('clarifyPhotoPreviewBox').style.display = 'flex';
+        };
+        reader.readAsDataURL(file);
+      });
+
+      document.getElementById('btnClarifyProcessPhoto').addEventListener('click', async () => {
+        if (!state.clarifyContext) return;
+        const ctx = state.clarifyContext;
+        if (state.serverOnline && (state.geminiApiKey || state.serverHasEnvKey)) {
+          closeClarifyModal();
+          state.filterRegion = ctx.selectedRegion;
+          renderRegionButtons();
+          await triggerAutoCollect(ctx.query, {
+            updateShopId: ctx.updateShopId || '',
+            imageBase64: ctx.imageBase64,
+            imageMimeType: ctx.imageMimeType
+          });
+        } else {
+          await savePlanBRecordFromClarify('方案 B（依現場為準）：已附上菜單照片，實際價格依現場為準');
+        }
+      });
+
+      document.getElementById('btnClarifyShowPaste').addEventListener('click', () => {
+        const area = document.getElementById('clarifyPasteArea');
+        area.style.display = area.style.display === 'none' ? 'flex' : 'none';
+      });
+
+      document.getElementById('btnClarifySubmitPaste').addEventListener('click', async () => {
+        if (!state.clarifyContext) return;
+        const ctx = state.clarifyContext;
+        const sourceUrl = document.getElementById('clarifyUrlInput').value.trim();
+        const sourceText = document.getElementById('clarifyTextInput').value.trim();
+        if (sourceUrl && ctx.partialShop?.links) ctx.partialShop.links.official = sourceUrl;
+
+        if (state.serverOnline && (state.geminiApiKey || state.serverHasEnvKey)) {
+          closeClarifyModal();
+          state.filterRegion = ctx.selectedRegion;
+          renderRegionButtons();
+          await triggerAutoCollect(ctx.query, {
+            updateShopId: ctx.updateShopId || '',
+            sourceUrl,
+            sourceText
+          });
+        } else {
+          await savePlanBRecordFromClarify(sourceText ? `方案 B 補充備註（依現場為準）：${sourceText}` : '方案 B（依現場為準）：已附網址，價格依現場為準');
+        }
+      });
+
+      document.getElementById('btnClarifySavePlanB').addEventListener('click', () => {
+        savePlanBRecordFromClarify();
+      });
+
+      document.getElementById('btnClarifyOpenSettings').addEventListener('click', () => {
+        closeClarifyModal();
+        renderRegionManageList();
+        renderShopManageList();
+        updateGeminiKeyUI();
+        document.getElementById('settingsOverlay').classList.add('is-open');
+      });
+
+      document.getElementById('closeClarifyBtn').addEventListener('click', closeClarifyModal);
+      document.getElementById('btnClarifyCancel').addEventListener('click', closeClarifyModal);
+      document.getElementById('clarifyModalOverlay').addEventListener('click', (e) => {
+        if (e.target === e.currentTarget) closeClarifyModal();
+      });
+
+      // Settings Drawer
+      const settingsOverlay = document.getElementById('settingsOverlay');
+      document.getElementById('openSettingsBtn').addEventListener('click', () => {
+        renderRegionManageList();
+        renderShopManageList();
+        updateGeminiKeyUI();
+        updateClock();
+        settingsOverlay.classList.add('is-open');
+      });
+      document.getElementById('closeSettingsBtn').addEventListener('click', () => settingsOverlay.classList.remove('is-open'));
+      settingsOverlay.addEventListener('click', (e) => {
+        if (e.target === settingsOverlay) settingsOverlay.classList.remove('is-open');
+      });
+
+      document.getElementById('saveGeminiKeyBtn').addEventListener('click', () => {
+        const val = document.getElementById('geminiKeyInput').value.trim();
+        state.geminiApiKey = val;
+        try { localStorage.setItem(STORAGE_KEYS.GEMINI_KEY, val); } catch {}
+        updateGeminiKeyUI();
+      });
+
+      document.getElementById('clearGeminiKeyBtn').addEventListener('click', () => {
+        state.geminiApiKey = '';
+        try { localStorage.removeItem(STORAGE_KEYS.GEMINI_KEY); } catch {}
+        updateGeminiKeyUI();
+      });
+
+      document.getElementById('addRegionForm').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const input = document.getElementById('newRegionInput');
+        const val = input.value.trim();
+        if (!val) return;
+        const exists = DEFAULT_REGIONS.includes(val) || state.customRegions.some((r) => r.name === val);
+        if (!exists) {
+          state.customRegions.push({ name: val, visibleOnHome: true });
+          saveJson(STORAGE_KEYS.CUSTOM_REGIONS, state.customRegions);
+        }
+        input.value = '';
+        renderRegionManageList();
+        renderRegionButtons();
+      });
+
+      document.getElementById('exportJsonBtn').addEventListener('click', exportShopsJson);
+      document.getElementById('clearLocalDraftsBtn').addEventListener('click', () => {
+        state.localShops = [];
+        saveJson(STORAGE_KEYS.LOCAL_SHOPS, []);
+        renderShopCards();
+        renderShopManageList();
+      });
+
+      const detailOverlay = document.getElementById('detailPreviewOverlay');
+      document.getElementById('closeDetailPreviewBtn').addEventListener('click', () => detailOverlay.classList.remove('is-open'));
+      document.getElementById('backHomePreviewBtn').addEventListener('click', () => detailOverlay.classList.remove('is-open'));
+      detailOverlay.addEventListener('click', (e) => {
+        if (e.target === detailOverlay) detailOverlay.classList.remove('is-open');
+      });
+
+      // ---------- Init ----------
+      applyTheme(state.themeMode);
+      updateClock();
+      setInterval(updateClock, 1000);
+      renderRegionButtons();
+      checkServerHealth();
+      loadShopsData();
+    })();
+  </script>
+</body>
+</html>

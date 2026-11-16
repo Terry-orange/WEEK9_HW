@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="zh-Hant" data-theme="light" data-theme-mode="system">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>鮮茶道（南部）｜菜單與即時價格收集</title>
+  <script>
+    (function () {
+      try {
+        var saved = localStorage.getItem('menu_collector_theme') || 'system';
+        var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        var resolved = saved === 'system' ? (prefersDark ? 'dark' : 'light') : saved;
+        if (resolved !== 'dark' && resolved !== 'light') resolved = 'light';
+        document.documentElement.setAttribute('data-theme', resolved);
+        document.documentElement.setAttribute('data-theme-mode', saved);
+      } catch (e) {
+        document.documentElement.setAttribute('data-theme', 'light');
+        document.documentElement.setAttribute('data-theme-mode', 'system');
+      }
+    })();
+  </script>
+  <style>
+    :root {
+      --bg-page: #F8F7F4;
+      --bg-card: #FFFFFF;
+      --bg-subtle: #F1EFEA;
+      --text-primary: #1C1E21;
+      --text-secondary: #646A73;
+      --text-muted: #8E95A0;
+      --border-color: #E6E2D8;
+      --accent: #F97316;
+      --accent-soft: #FFF1E6;
+      --accent-soft-hover: #FFE4CE;
+      --accent-text: #C2410C;
+      --success-bg: #ECFDF3;
+      --success-text: #15803D;
+      --success-border: #BBF7D0;
+      --shadow-sm: 0 1px 2px rgba(28, 30, 33, 0.05);
+      --radius-sm: 10px;
+      --radius-md: 14px;
+      --radius-lg: 20px;
+      --font-sans: "Inter", "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    html[data-theme="dark"] {
+      --bg-page: #121316;
+      --bg-card: #1D1F26;
+      --bg-subtle: #252832;
+      --text-primary: #F3F4F6;
+      --text-secondary: #A1A7B3;
+      --text-muted: #717885;
+      --border-color: #2C303C;
+      --accent: #FB923C;
+      --accent-soft: rgba(249, 115, 22, 0.16);
+      --accent-soft-hover: rgba(249, 115, 22, 0.25);
+      --accent-text: #FDBA74;
+      --success-bg: rgba(34, 197, 94, 0.14);
+      --success-text: #86EFAC;
+      --success-border: rgba(34, 197, 94, 0.3);
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.25);
+    }
+
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0; padding: 0;
+      background-color: var(--bg-page); color: var(--text-primary);
+      font-family: var(--font-sans); line-height: 1.55;
+    }
+    a { color: inherit; text-decoration: none; }
+    button { font-family: inherit; }
+    .tabular-nums { font-variant-numeric: tabular-nums; }
+
+    .page-shell { max-width: 980px; margin: 0 auto; padding: 24px 20px 64px; }
+
+    .top-nav {
+      display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+      padding: 14px 18px; background: var(--bg-card); border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); margin-bottom: 22px;
+    }
+
+    .btn-back {
+      display: inline-flex; align-items: center; gap: 7px; padding: 8px 14px; border-radius: 12px;
+      background: var(--accent-soft); color: var(--accent-text); font-size: 0.88rem; font-weight: 700;
+    }
+    .btn-back:hover { background: var(--accent-soft-hover); }
+
+    .theme-switcher {
+      display: inline-flex; padding: 3px; background: var(--bg-subtle);
+      border: 1px solid var(--border-color); border-radius: 12px; gap: 2px;
+    }
+    .theme-btn {
+      border: none; background: transparent; color: var(--text-secondary);
+      padding: 6px 10px; border-radius: 9px; font-size: 0.8rem; font-weight: 600; cursor: pointer;
+    }
+    .theme-btn.is-active { background: var(--accent-soft); color: var(--accent-text); }
+
+    .shop-hero {
+      background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg);
+      padding: 24px; box-shadow: var(--shadow-sm); margin-bottom: 22px;
+      display: flex; flex-direction: column; gap: 14px;
+    }
+
+    .badge-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .badge-region {
+      padding: 4px 11px; border-radius: 8px; background: var(--accent-soft);
+      color: var(--accent-text); font-size: 0.8rem; font-weight: 700;
+    }
+    .badge-status {
+      padding: 4px 11px; border-radius: 999px; background: var(--success-bg);
+      color: var(--success-text); border: 1px solid var(--success-border);
+      font-size: 0.78rem; font-weight: 700;
+    }
+
+    .shop-hero h1 { margin: 0; font-size: 1.65rem; font-weight: 800; }
+    .shop-branch { margin: 0; font-size: 0.94rem; color: var(--text-secondary); }
+
+    .info-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 12px; padding-top: 12px; border-top: 1px dashed var(--border-color);
+    }
+    .info-cell {
+      background: var(--bg-subtle); border: 1px solid var(--border-color);
+      border-radius: var(--radius-md); padding: 12px 14px;
+    }
+    .info-label { font-size: 0.76rem; font-weight: 700; color: var(--text-muted); margin-bottom: 4px; }
+    .info-value { font-size: 0.88rem; color: var(--text-primary); word-break: break-word; }
+
+    .link-pills { display: flex; gap: 8px; flex-wrap: wrap; }
+    .link-pill {
+      display: inline-flex; align-items: center; gap: 6px; padding: 7px 13px;
+      border-radius: var(--radius-sm); background: var(--accent-soft); color: var(--accent-text);
+      font-size: 0.84rem; font-weight: 700;
+    }
+    .link-pill:hover { background: var(--accent-soft-hover); }
+
+    /* 緊密雙欄瀑布流 */
+    .menu-grid { column-count: 1; column-gap: 16px; }
+    @media (min-width: 720px) { .menu-grid { column-count: 2; } }
+
+    .menu-card {
+      display: inline-block; width: 100%; break-inside: avoid; margin-bottom: 16px;
+      background: var(--bg-card); border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg); padding: 18px 20px; box-shadow: var(--shadow-sm);
+    }
+
+    .menu-card-head {
+      display: flex; align-items: center; justify-content: space-between; gap: 8px;
+      margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid var(--border-color);
+    }
+    .menu-card-title { display: flex; align-items: center; gap: 9px; margin: 0; font-size: 1.02rem; font-weight: 700; }
+    .cat-icon-box {
+      width: 28px; height: 28px; border-radius: 8px; background: var(--accent-soft); color: var(--accent);
+      display: inline-flex; align-items: center; justify-content: center; font-size: 0.85rem; font-weight: 800; flex-shrink: 0;
+    }
+    .cat-count { font-size: 0.78rem; font-weight: 700; color: var(--text-muted); }
+
+    .menu-subhead {
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      padding: 6px 10px; margin-bottom: 8px; border-radius: 8px;
+      background: var(--bg-subtle); font-size: 0.78rem; font-weight: 700; color: var(--text-secondary);
+    }
+
+    .menu-list { display: flex; flex-direction: column; gap: 8px; }
+    .menu-item {
+      display: flex; align-items: baseline; justify-content: space-between; gap: 12px;
+      padding: 7px 0; border-bottom: 1px dashed var(--border-color);
+    }
+    .menu-item:last-child { border-bottom: none; padding-bottom: 0; }
+    .item-name { font-size: 0.9rem; font-weight: 600; }
+    .item-note { display: block; font-size: 0.76rem; color: var(--text-secondary); margin-top: 2px; }
+    .item-price { font-size: 0.95rem; font-weight: 800; color: var(--accent-text); white-space: nowrap; }
+  </style>
+</head>
+<body>
+  <div class="page-shell">
+    <nav class="top-nav" aria-label="頁面導覽">
+      <a class="btn-back" href="../index.html">← 返回首頁</a>
+      <div class="theme-switcher" role="group" aria-label="主題模式切換">
+        <button type="button" class="theme-btn" data-theme-option="system">系統</button>
+        <button type="button" class="theme-btn" data-theme-option="light">淺色</button>
+        <button type="button" class="theme-btn" data-theme-option="dark">深色</button>
+      </div>
+    </nav>
+
+    <header class="shop-hero">
+      <div class="badge-row">
+        <span class="badge-region">📍 南部</span>
+        <span class="badge-status">菜單價格完整（官網南區核對）</span>
+      </div>
+
+      <div>
+        <h1>鮮茶道</h1>
+        <p class="shop-branch">彰投・雲嘉南・高屏區門市（官網線上菜單南區版本）</p>
+      </div>
+
+      <div class="info-grid">
+        <div class="info-cell">
+          <div class="info-label">營業時間</div>
+          <div class="info-value">多數門市約 09:30 / 10:00 - 21:30 / 22:00（各加盟分店略有差異）</div>
+        </div>
+        <div class="info-cell">
+          <div class="info-label">資料抓取本地時間（Local Time）</div>
+          <div class="info-value tabular-nums">2026-11-16 19:22（+08:00）</div>
+        </div>
+        <div class="info-cell">
+          <div class="info-label">最後更新備註</div>
+          <div class="info-value">已核對鮮茶道官網線上菜單南區完整標價（僅分 L 大杯與部分品項瓶裝；Pro 瓶回購折 20 元／自取買 5 送 1／週一無糖日鮮淬茶 3 杯 75 元）</div>
+        </div>
+      </div>
+
+      <div class="link-pills">
+        <a class="link-pill" href="https://www.presotea.com/online-menu" target="_blank" rel="noopener noreferrer">🌐 官方線上菜單</a>
+        <a class="link-pill" href="https://www.facebook.com/presotea.tw" target="_blank" rel="noopener noreferrer">Facebook</a>
+        <a class="link-pill" href="https://www.instagram.com/presotea_global/" target="_blank" rel="noopener noreferrer">Instagram</a>
+      </div>
+    </header>
+
+    <main class="menu-grid">
+      <!-- 鮮淬茶 -->
+      <section class="menu-card">
+        <div class="menu-card-head">
+          <h2 class="menu-card-title"><span class="cat-icon-box">茶</span> 鮮淬茶</h2>
+          <span class="cat-count tabular-nums">2 組 · L / 瓶</span>
+        </div>
+        <div class="menu-subhead">
+          <span>品項（同類以 / 分隔）</span>
+          <span class="tabular-nums">L / 瓶</span>
+        </div>
+        <div class="menu-list">
+          <div class="menu-item">
+            <div><span class="item-name">阿里山冰茶 / 頂級茉莉綠茶 / 琥珀紅茶 / 烏龍綠茶 / 文山清茶 / 鮮露金萱茶</span></div>
+            <span class="item-price tabular-nums">$30 / $60</span>
+          </div>
+          <div class="menu-item">
+            <div><span class="item-name">日式玄米茶 / 伯爵紅茶 / 茶花綠茶 / 炭燒焙茶 / 白桃風味烏龍茶</span></div>
+            <span class="item-price tabular-nums">$35 / $65</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- 特等茶 -->
+      <section class="menu-card">
+        <div class="menu-card-head">
+          <h2 class="menu-card-title"><span class="cat-icon-box">特</span> 特等茶</h2>
+          <span class="cat-count tabular-nums">1 組 · L / 瓶</span>
+        </div>
+        <div class="menu-subhead">
+          <span>品項（同類以 / 分隔）</span>
+          <span class="tabular-nums">L / 瓶</span>
+        </div>
+        <div class="menu-list">
+          <div class="menu-item">
+            <div><span class="item-name">阿里山里佳甘露 / 日月潭紅玉</span><span class="item-note">僅提供 L 杯</span></div>
+            <span class="item-price tabular-nums">$45 / —</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- 雨林聯盟認證茶葉 -->
+      <section class="menu-card">
+        <div class="menu-card-head">
+          <h2 class="menu-card-title"><span class="cat-icon-box">雨</span> 雨林聯盟認證茶葉</h2>
+          <span class="cat-count tabular-nums">5 組 · L / 瓶</span>
+        </div>
+        <div class="menu-subhead">
+          <span>品項（同類以 / 分隔）</span>
+          <span class="tabular-nums">L / 瓶</span>
+        </div>
+        <div class="menu-list">
+          <div class="menu-item"><span class="item-name">四季春</span><span class="item-price tabular-nums">$35 / —</span></div>
+          <div class="menu-item"><span class="item-name">蜜香紅茶 / 東方美人茶</span><span class="item-price tabular-nums">$40 / —</span></div>
+          <div class="menu-item"><span class="item-name">蜜香果茶</span><span class="item-price tabular-nums">$50 / —</span></div>
+          <div class="menu-item"><span class="item-name">寒天四季奶青</span><span class="item-price tabular-nums">$60 / —</span></div>
+          <div class="menu-item"><span class="item-name">蜜柚美人茶</span><span class="item-price tabular-nums">$70 / —</span></div>
+        </div>
+      </section>
+
+      <!-- 奶茶繽紛樂 -->
+      <section class="menu-card">
+        <div class="menu-card-head">
+          <h2 class="menu-card-title"><span class="cat-icon-box">奶</span> 奶茶繽紛樂</h2>
+          <span class="cat-count tabular-nums">5 組 · L / 瓶</span>
+        </div>
+        <div class="menu-subhead">
+          <span>品項（同類以 / 分隔）</span>
+          <span class="tabular-nums">L / 瓶</span>
+        </div>
+        <div class="menu-list">
+          <div class="menu-item"><span class="item-name">茉香奶茶</span><span class="item-price tabular-nums">$45 / $85</span></div>
+          <div class="menu-item"><span class="item-name">英倫奶茶 / 沖繩黑糖風味奶茶 / 伯爵奶茶 / 焙茶烤奶</span><span class="item-price tabular-nums">$50 / $90</span></div>
+          <div class="menu-item"><span class="item-name">珍珠奶茶 / 仙草凍奶茶 / 泰式奶茶</span><span class="item-price tabular-nums">$60 / —</span></div>
+          <div class="menu-item"><span class="item-name">布丁奶茶 / 一番極品抹茶奶綠</span><span class="item-price tabular-nums">$65 / —</span></div>
+          <div class="menu-item"><span class="item-name">熊貓黑糖珍奶茶</span><span class="item-price tabular-nums">$70 / —</span></div>
+        </div>
+      </section>
+
+      <!-- 鮮奶系列 -->
+      <section class="menu-card">
+        <div class="menu-card-head">
+          <h2 class="menu-card-title"><span class="cat-icon-box">鮮</span> 鮮奶系列</h2>
+          <span class="cat-count tabular-nums">3 組 · L / 瓶</span>
+        </div>
+        <div class="menu-subhead">
+          <span>品項（同類以 / 分隔）</span>
+          <span class="tabular-nums">L / 瓶</span>
+        </div>
+        <div class="menu-list">
+          <div class="menu-item"><span class="item-name">紅/綠茶拿鐵</span><span class="item-price tabular-nums">$60 / $100</span></div>
+          <div class="menu-item"><span class="item-name">伯爵拿鐵</span><span class="item-price tabular-nums">$65 / $105</span></div>
+          <div class="menu-item"><div><span class="item-name">黑糖珍珠撞奶</span><span class="item-note">無糖固定</span></div><span class="item-price tabular-nums">$65 / —</span></div>
+        </div>
+      </section>
+
+      <!-- 奶霜系列 -->
+      <section class="menu-card">
+        <div class="menu-card-head">
+          <h2 class="menu-card-title"><span class="cat-icon-box">霜</span> 奶霜系列</h2>
+          <span class="cat-count tabular-nums">2 組 · L / 瓶</span>
+        </div>
+        <div class="menu-subhead">
+          <span>品項（同類以 / 分隔）</span>
+          <span class="tabular-nums">L / 瓶</span>
+        </div>
+        <div class="menu-list">
+          <div class="menu-item"><span class="item-name">英倫奶霜 / 桃韻烏龍奶霜 / 茶花綠茶奶霜</span><span class="item-price tabular-nums">$55 / —</span></div>
+          <div class="menu-item"><span class="item-name">一番極品抹茶奶霜</span><span class="item-price tabular-nums">$75 / —</span></div>
+        </div>
+      </section>
+
+      <!-- 果然纖滋味 -->
+      <section class="menu-card">
+        <div class="menu-card-head">
+          <h2 class="menu-card-title"><span class="cat-icon-box">果</span> 果然纖滋味</h2>
+          <span class="cat-count tabular-nums">6 組 · L / 瓶</span>
+        </div>
+        <div class="menu-subhead">
+          <span>品項（同類以 / 分隔）</span>
+          <span class="tabular-nums">L / 瓶</span>
+        </div>
+        <div class="menu-list">
+          <div class="menu-item"><span class="item-name">荔枝QQ金萱</span><span class="item-price tabular-nums">$40 / —</span></div>
+          <div class="menu-item"><span class="item-name">墾丁冰茶</span><span class="item-price tabular-nums">$45 / —</span></div>
+          <div class="menu-item"><span class="item-name">養樂多綠茶</span><span class="item-price tabular-nums">$50 / —</span></div>
+          <div class="menu-item"><span class="item-name">鳳梨清茶</span><span class="item-price tabular-nums">$55 / —</span></div>
+          <div class="menu-item"><span class="item-name">橙香金萱</span><span class="item-price tabular-nums">$65 / —</span></div>
+          <div class="menu-item"><span class="item-name">招牌水果茶 / 鮮果雙Q綠茶</span><span class="item-price tabular-nums">$70 / —</span></div>
+        </div>
+      </section>
+
+      <!-- 無咖啡因 -->
+      <section class="menu-card">
+        <div class="menu-card-head">
+          <h2 class="menu-card-title"><span class="cat-icon-box">無</span> 無咖啡因</h2>
+          <span class="cat-count tabular-nums">8 組 · L / 瓶</span>
+        </div>
+        <div class="menu-subhead">
+          <span>品項（同類以 / 分隔）</span>
+          <span class="tabular-nums">L / 瓶</span>
+        </div>
+        <div class="menu-list">
+          <div class="menu-item"><span class="item-name">古早味冬瓜茶</span><span class="item-price tabular-nums">$35 / $75</span></div>
+          <div class="menu-item"><span class="item-name">蕎麥穀物茶</span><span class="item-price tabular-nums">$40 / —</span></div>
+          <div class="menu-item"><span class="item-name">檸檬CC / 藍莓果茶</span><span class="item-price tabular-nums">$45 / $85</span></div>
+          <div class="menu-item"><span class="item-name">蕎麥穀物冬瓜</span><span class="item-price tabular-nums">$50 / —</span></div>
+          <div class="menu-item"><span class="item-name">鮮桔檸檬飲</span><span class="item-price tabular-nums">$55 / $95</span></div>
+          <div class="menu-item"><span class="item-name">冬瓜檸檬</span><span class="item-price tabular-nums">$60 / $100</span></div>
+          <div class="menu-item"><span class="item-name">蜂蜜檸好</span><span class="item-price tabular-nums">$65 / $105</span></div>
+          <div class="menu-item"><span class="item-name">台灣三麥穀奶 / 橙美荔</span><span class="item-price tabular-nums">$65 / —</span></div>
+        </div>
+      </section>
+
+      <!-- 季節限定 -->
+      <section class="menu-card">
+        <div class="menu-card-head">
+          <h2 class="menu-card-title"><span class="cat-icon-box">季</span> 季節限定</h2>
+          <span class="cat-count tabular-nums">8 組 · L / 瓶</span>
+        </div>
+        <div class="menu-subhead">
+          <span>品項（同類以 / 分隔）</span>
+          <span class="tabular-nums">L / 瓶</span>
+        </div>
+        <div class="menu-list">
+          <div class="menu-item"><span class="item-name">梅果綠茶</span><span class="item-price tabular-nums">$45 / —</span></div>
+          <div class="menu-item"><span class="item-name">洛神汁</span><span class="item-price tabular-nums">$45 / $85</span></div>
+          <div class="menu-item"><div><span class="item-name">青梅冰鑽 / 黑糖薑茶 / 桂圓紅棗茶</span><span class="item-note">黑糖薑茶、桂圓紅棗茶為 11月~2月供應</span></div><span class="item-price tabular-nums">$55 / —</span></div>
+          <div class="menu-item"><span class="item-name">鳳梨冰鑽</span><span class="item-price tabular-nums">$60 / —</span></div>
+          <div class="menu-item"><div><span class="item-name">翡翠檸檬冰鑽 / 芭樂檸檬綠茶 / 薑汁撞奶</span><span class="item-note">芭樂檸檬綠茶 5月~9月；薑汁撞奶 11月~2月</span></div><span class="item-price tabular-nums">$65 / —</span></div>
+          <div class="menu-item"><div><span class="item-name">洛神多多 / 紅心芭樂汁</span><span class="item-note">紅心芭樂汁為 5月~9月供應</span></div><span class="item-price tabular-nums">$65 / $105</span></div>
+          <div class="menu-item"><span class="item-name">洛神打檸</span><span class="item-price tabular-nums">$70 / —</span></div>
+          <div class="menu-item"><div><span class="item-name">紅心芭樂梅</span><span class="item-note">5月~9月供應</span></div><span class="item-price tabular-nums">$70 / $110</span></div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    (function () {
+      const STORAGE_KEY = 'menu_collector_theme';
+      const mediaDark = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)').matches;
+
+      function applyTheme(mode) {
+        try { localStorage.setItem(STORAGE_KEY, mode); } catch {}
+        const resolved = mode === 'system' ? (mediaDark && mediaDark.matches ? 'dark' : 'light') : mode;
+        document.documentElement.setAttribute('data-theme', resolved);
+        document.documentElement.setAttribute('data-theme-mode', mode);
+        document.querySelectorAll('[data-theme-option]').forEach((btn) => {
+          btn.classList.toggle('is-active', btn.dataset.themeOption === mode);
+        });
+      }
+
+      if (mediaDark && mediaDark.addEventListener) {
+        mediaDark.addEventListener('change', () => {
+          if ((localStorage.getItem(STORAGE_KEY) || 'system') === 'system') applyTheme('system');
+        });
+      }
+
+      document.querySelectorAll('[data-theme-option]').forEach((btn) => {
+        btn.addEventListener('click', () => applyTheme(btn.dataset.themeOption));
+      });
+
+      applyTheme(localStorage.getItem(STORAGE_KEY) || 'system');
+    })();
+  </script>
+</body>
+</html>

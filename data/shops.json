@@ -1,0 +1,421 @@
+{
+  "schemaVersion": "1.0.0",
+  "module": "menu-price-collector",
+  "currency": "TWD",
+  "updatedAt": "2026-11-16T19:22:10+08:00",
+  "defaultRegions": [
+    "北部",
+    "中部",
+    "南部"
+  ],
+  "customRegions": [],
+  "shops": [
+    {
+      "id": "presotea-south-001",
+      "slug": "presotea-south-001",
+      "name": "鮮茶道",
+      "region": "南部",
+      "branch": "彰投・雲嘉南・高屏區門市（官網線上菜單南區版本）",
+      "status": "complete",
+      "businessHours": "多數門市約 09:30 / 10:00 - 21:30 / 22:00（各加盟分店略有差異）",
+      "fetchedAt": "2026-11-16T19:22:10+08:00",
+      "updateNote": "已核對鮮茶道官網線上菜單（https://www.presotea.com/online-menu）南區（彰投、雲嘉南、高屏）完整標價；全品項僅分 L（大杯）與部分品項瓶裝（Pro 瓶回購折 20 元），自取買 5 送 1／週一健康無糖日鮮淬茶 3 杯 75 元",
+      "links": {
+        "official": "https://www.presotea.com/online-menu",
+        "facebook": "https://www.facebook.com/presotea.tw",
+        "instagram": "https://www.instagram.com/presotea_global/"
+      },
+      "detailPath": "./shops/presotea-south-001.html",
+      "menu": [
+        {
+          "category": "鮮淬茶",
+          "sizeLabels": ["L", "瓶"],
+          "items": [
+            {
+              "name": "阿里山冰茶 / 頂級茉莉綠茶 / 琥珀紅茶 / 烏龍綠茶 / 文山清茶 / 鮮露金萱茶",
+              "price": 30,
+              "prices": { "L": 30, "瓶": 60 },
+              "note": ""
+            },
+            {
+              "name": "日式玄米茶 / 伯爵紅茶 / 茶花綠茶 / 炭燒焙茶 / 白桃風味烏龍茶",
+              "price": 35,
+              "prices": { "L": 35, "瓶": 65 },
+              "note": ""
+            }
+          ]
+        },
+        {
+          "category": "特等茶",
+          "sizeLabels": ["L", "瓶"],
+          "items": [
+            {
+              "name": "阿里山里佳甘露 / 日月潭紅玉",
+              "price": 45,
+              "prices": { "L": 45, "瓶": null },
+              "note": "僅提供 L 杯"
+            }
+          ]
+        },
+        {
+          "category": "雨林聯盟認證茶葉",
+          "sizeLabels": ["L", "瓶"],
+          "items": [
+            { "name": "四季春", "price": 35, "prices": { "L": 35, "瓶": null }, "note": "" },
+            { "name": "蜜香紅茶 / 東方美人茶", "price": 40, "prices": { "L": 40, "瓶": null }, "note": "" },
+            { "name": "蜜香果茶", "price": 50, "prices": { "L": 50, "瓶": null }, "note": "" },
+            { "name": "寒天四季奶青", "price": 60, "prices": { "L": 60, "瓶": null }, "note": "" },
+            { "name": "蜜柚美人茶", "price": 70, "prices": { "L": 70, "瓶": null }, "note": "" }
+          ]
+        },
+        {
+          "category": "奶茶繽紛樂",
+          "sizeLabels": ["L", "瓶"],
+          "items": [
+            { "name": "茉香奶茶", "price": 45, "prices": { "L": 45, "瓶": 85 }, "note": "" },
+            { "name": "英倫奶茶 / 沖繩黑糖風味奶茶 / 伯爵奶茶 / 焙茶烤奶", "price": 50, "prices": { "L": 50, "瓶": 90 }, "note": "" },
+            { "name": "珍珠奶茶 / 仙草凍奶茶 / 泰式奶茶", "price": 60, "prices": { "L": 60, "瓶": null }, "note": "" },
+            { "name": "布丁奶茶 / 一番極品抹茶奶綠", "price": 65, "prices": { "L": 65, "瓶": null }, "note": "" },
+            { "name": "熊貓黑糖珍奶茶", "price": 70, "prices": { "L": 70, "瓶": null }, "note": "" }
+          ]
+        },
+        {
+          "category": "鮮奶系列",
+          "sizeLabels": ["L", "瓶"],
+          "items": [
+            { "name": "紅/綠茶拿鐵", "price": 60, "prices": { "L": 60, "瓶": 100 }, "note": "" },
+            { "name": "伯爵拿鐵", "price": 65, "prices": { "L": 65, "瓶": 105 }, "note": "" },
+            { "name": "黑糖珍珠撞奶", "price": 65, "prices": { "L": 65, "瓶": null }, "note": "無糖固定" }
+          ]
+        },
+        {
+          "category": "奶霜系列",
+          "sizeLabels": ["L", "瓶"],
+          "items": [
+            { "name": "英倫奶霜 / 桃韻烏龍奶霜 / 茶花綠茶奶霜", "price": 55, "prices": { "L": 55, "瓶": null }, "note": "" },
+            { "name": "一番極品抹茶奶霜", "price": 75, "prices": { "L": 75, "瓶": null }, "note": "" }
+          ]
+        },
+        {
+          "category": "果然纖滋味",
+          "sizeLabels": ["L", "瓶"],
+          "items": [
+            { "name": "荔枝QQ金萱", "price": 40, "prices": { "L": 40, "瓶": null }, "note": "" },
+            { "name": "墾丁冰茶", "price": 45, "prices": { "L": 45, "瓶": null }, "note": "" },
+            { "name": "養樂多綠茶", "price": 50, "prices": { "L": 50, "瓶": null }, "note": "" },
+            { "name": "鳳梨清茶", "price": 55, "prices": { "L": 55, "瓶": null }, "note": "" },
+            { "name": "橙香金萱", "price": 65, "prices": { "L": 65, "瓶": null }, "note": "" },
+            { "name": "招牌水果茶 / 鮮果雙Q綠茶", "price": 70, "prices": { "L": 70, "瓶": null }, "note": "" }
+          ]
+        },
+        {
+          "category": "無咖啡因",
+          "sizeLabels": ["L", "瓶"],
+          "items": [
+            { "name": "古早味冬瓜茶", "price": 35, "prices": { "L": 35, "瓶": 75 }, "note": "" },
+            { "name": "蕎麥穀物茶", "price": 40, "prices": { "L": 40, "瓶": null }, "note": "" },
+            { "name": "檸檬CC / 藍莓果茶", "price": 45, "prices": { "L": 45, "瓶": 85 }, "note": "" },
+            { "name": "蕎麥穀物冬瓜", "price": 50, "prices": { "L": 50, "瓶": null }, "note": "" },
+            { "name": "鮮桔檸檬飲", "price": 55, "prices": { "L": 55, "瓶": 95 }, "note": "" },
+            { "name": "冬瓜檸檬", "price": 60, "prices": { "L": 60, "瓶": 100 }, "note": "" },
+            { "name": "蜂蜜檸好", "price": 65, "prices": { "L": 65, "瓶": 105 }, "note": "" },
+            { "name": "台灣三麥穀奶 / 橙美荔", "price": 65, "prices": { "L": 65, "瓶": null }, "note": "" }
+          ]
+        },
+        {
+          "category": "季節限定",
+          "sizeLabels": ["L", "瓶"],
+          "items": [
+            { "name": "梅果綠茶", "price": 45, "prices": { "L": 45, "瓶": null }, "note": "" },
+            { "name": "洛神汁", "price": 45, "prices": { "L": 45, "瓶": 85 }, "note": "" },
+            { "name": "青梅冰鑽 / 黑糖薑茶 / 桂圓紅棗茶", "price": 55, "prices": { "L": 55, "瓶": null }, "note": "黑糖薑茶、桂圓紅棗茶為 11月~2月供應" },
+            { "name": "鳳梨冰鑽", "price": 60, "prices": { "L": 60, "瓶": null }, "note": "" },
+            { "name": "翡翠檸檬冰鑽 / 芭樂檸檬綠茶 / 薑汁撞奶", "price": 65, "prices": { "L": 65, "瓶": null }, "note": "芭樂檸檬綠茶 5月~9月；薑汁撞奶 11月~2月" },
+            { "name": "洛神多多 / 紅心芭樂汁", "price": 65, "prices": { "L": 65, "瓶": 105 }, "note": "紅心芭樂汁為 5月~9月供應" },
+            { "name": "洛神打檸", "price": 70, "prices": { "L": 70, "瓶": null }, "note": "" },
+            { "name": "紅心芭樂梅", "price": 70, "prices": { "L": 70, "瓶": 110 }, "note": "5月~9月供應" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "milksha-south-001",
+      "slug": "milksha-south-001",
+      "name": "迷客夏",
+      "region": "南部",
+      "branch": "南部一般門市（雲嘉南高屏街邊店；百貨與外送價格另計）",
+      "status": "complete",
+      "businessHours": "多數門市週一至週日 10:00 - 22:00（百貨商場店依館別營業時間調整）",
+      "fetchedAt": "2026-11-16T19:08:20+08:00",
+      "updateNote": "已核對 2025-2026 迷客夏中南區一般門市常態定價；少數依門市浮動（如冬瓜青茶）與季節限定品項依方案 B 標為待確認，實際以門市或迷點公告為準",
+      "links": {
+        "official": "https://www.milksha.com/",
+        "facebook": "https://www.facebook.com/milkshatw",
+        "instagram": "https://www.instagram.com/milksha_tw/"
+      },
+      "detailPath": "./shops/milksha-south-001.html",
+      "menu": [
+        {
+          "category": "醇萃茶（純茶類）",
+          "sizeLabels": ["中", "大"],
+          "items": [
+            {
+              "name": "大正醇香紅茶 / 英倫伯爵紅茶 / 茉莉原淬綠茶 / 原片初露青茶 / 琥珀高峰烏龍",
+              "price": 35,
+              "prices": { "中": null, "大": 35 },
+              "note": "一般門市純茶以大杯（L）為主"
+            },
+            {
+              "name": "娜杯紅茶",
+              "price": 40,
+              "prices": { "中": null, "大": 40 },
+              "note": "一般門市純茶以大杯（L）為主"
+            }
+          ]
+        },
+        {
+          "category": "醇濃鮮奶茶（綠光鮮奶）",
+          "sizeLabels": ["中", "大"],
+          "items": [
+            {
+              "name": "大正紅茶拿鐵 / 伯爵紅茶拿鐵 / 琥珀烏龍拿鐵 / 茉香綠茶拿鐵 / 原片青茶拿鐵",
+              "price": 50,
+              "prices": { "中": 50, "大": 60 },
+              "note": ""
+            },
+            {
+              "name": "娜杯紅茶拿鐵",
+              "price": 55,
+              "prices": { "中": 55, "大": 65 },
+              "note": ""
+            },
+            {
+              "name": "珍珠大正紅茶拿鐵 / 珍珠伯爵紅茶拿鐵",
+              "price": 60,
+              "prices": { "中": 60, "大": 70 },
+              "note": ""
+            },
+            {
+              "name": "珍珠娜杯紅茶拿鐵",
+              "price": 65,
+              "prices": { "中": 65, "大": 75 },
+              "note": ""
+            }
+          ]
+        },
+        {
+          "category": "醇濃綠光鮮奶（無茶底）",
+          "sizeLabels": ["中", "大"],
+          "items": [
+            {
+              "name": "芋頭鮮奶 / 珍珠鮮奶 / 手炒黑糖鮮奶 / 嫩仙草凍奶",
+              "price": 65,
+              "prices": { "中": 65, "大": 85 },
+              "note": ""
+            }
+          ]
+        },
+        {
+          "category": "鮮調果茶與手作特調",
+          "sizeLabels": ["中", "大"],
+          "items": [
+            {
+              "name": "養樂多綠",
+              "price": 50,
+              "prices": { "中": null, "大": 50 },
+              "note": ""
+            },
+            {
+              "name": "香柚綠茶 / 熟釀青梅綠",
+              "price": 55,
+              "prices": { "中": null, "大": 55 },
+              "note": "冷飲限定"
+            },
+            {
+              "name": "冬瓜青茶",
+              "price": null,
+              "prices": { "中": null, "大": null },
+              "note": "方案 B 待確認：中南部不同門市有 $50 / $55 差異，請以現場菜單或迷點為準"
+            },
+            {
+              "name": "柳丁綠茶 / 柳丁青茶 / 青檸香茶",
+              "price": 65,
+              "prices": { "中": null, "大": 65 },
+              "note": ""
+            },
+            {
+              "name": "白甘蔗青茶",
+              "price": 70,
+              "prices": { "中": null, "大": 70 },
+              "note": ""
+            }
+          ]
+        },
+        {
+          "category": "無咖啡因系列",
+          "sizeLabels": ["中", "大"],
+          "items": [
+            {
+              "name": "焙香決明大麥 / 原鄉冬瓜茶",
+              "price": 35,
+              "prices": { "中": null, "大": 35 },
+              "note": ""
+            },
+            {
+              "name": "輕纖蕎麥茶",
+              "price": 45,
+              "prices": { "中": null, "大": 45 },
+              "note": ""
+            },
+            {
+              "name": "焙香大麥拿鐵",
+              "price": 50,
+              "prices": { "中": 50, "大": 60 },
+              "note": ""
+            },
+            {
+              "name": "輕纖蕎麥拿鐵",
+              "price": 60,
+              "prices": { "中": 60, "大": 70 },
+              "note": ""
+            }
+          ]
+        },
+        {
+          "category": "加料區",
+          "items": [
+            { "name": "珍珠 / 仙草凍 / 綠茶凍", "price": 10, "note": "單份加料價" },
+            { "name": "蜂蜜黑糖粉粿 / 荔荔椰果", "price": 15, "note": "單份加料價（限冷飲）" }
+          ]
+        },
+        {
+          "category": "季節限定（方案 B 待確認）",
+          "items": [
+            {
+              "name": "娜杯太妃QQ / 太妃烏龍拿鐵 / 太妃伯爵布朗拿鐵 / 太妃焙焙拿鐵",
+              "price": null,
+              "note": "方案 B 待確認：依南部門市現場公告或「迷點」即時價格為準，不預先猜測"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "dain-dain-hamburger-south-001",
+      "slug": "dain-dain-hamburger-south-001",
+      "name": "丹丹漢堡",
+      "region": "南部",
+      "branch": "台南／高雄／屏東各分店（參考官網公開菜單）",
+      "status": "complete",
+      "businessHours": "多數門市約 06:30 / 07:00 - 21:00（各分店公休日不同；早安特惠餐為週一至週五 10:30 前）",
+      "fetchedAt": "2026-11-16T15:21:30+08:00",
+      "updateNote": "已彙整丹丹漢堡官網及 2025-2026 公開菜單與標價；多數門市僅收現金，實際依各分店現場公告為準",
+      "links": {
+        "official": "https://www.dain-dain-hamburger.com/",
+        "facebook": "",
+        "instagram": ""
+      },
+      "detailPath": "./shops/dain-dain-hamburger-south-001.html",
+      "menu": [
+        {
+          "category": "主餐（精選定食餐 1～12 號）",
+          "items": [
+            { "name": "1號餐（赤肉麵線焿＋脆皮炸雞）", "price": 109, "note": "附 29 元飲料" },
+            { "name": "2號餐（香檸吉司豬排堡＋蘑菇雞肉可樂餅）", "price": 119, "note": "附 29 元飲料" },
+            { "name": "3號餐（無骨雞塊＋黃金鮮酥雞）", "price": 109, "note": "附 29 元飲料" },
+            { "name": "4號餐（五穀瘦肉粥＋脆皮炸雞）", "price": 109, "note": "附 29 元飲料" },
+            { "name": "5號餐（鮮脆雞腿堡＋玉米濃湯）", "price": 104, "note": "附 29 元飲料" },
+            { "name": "6號餐（鮮酥雞肉焿＋烤醬雞堡）", "price": 99, "note": "附 29 元飲料" },
+            { "name": "7號餐（烤醬雞堡＋脆皮炸雞）", "price": 112, "note": "附 29 元飲料" },
+            { "name": "8號餐（香檸吉司豬排堡＋脆皮炸雞）", "price": 119, "note": "附 29 元飲料" },
+            { "name": "9號餐（赤肉麵線焿＋鮮脆雞腿堡）", "price": 119, "note": "附 29 元飲料" },
+            { "name": "10號餐（2塊脆皮炸雞，腿／塊任選）", "price": 113, "note": "附 29 元飲料" },
+            { "name": "11號餐（赤肉麵線焿＋經典排骨酥）", "price": 89, "note": "附 29 元飲料" },
+            { "name": "12號餐（五穀瘦肉粥＋蘑菇雞肉可樂餅 2入）", "price": 99, "note": "附 29 元飲料" }
+          ]
+        },
+        {
+          "category": "主餐（呷飽餐 13～16 號四件組）",
+          "items": [
+            { "name": "13號餐（烤醬雞堡＋玉米濃湯＋無骨雞塊 5入）", "price": 129, "note": "附 29 元飲料" },
+            { "name": "14號餐（經典排骨酥＋鮮酥雞肉焿＋脆皮炸雞）", "price": 139, "note": "附 29 元飲料" },
+            { "name": "15號餐（黃金鮮酥雞＋排骨酥肉焿＋香酥米糕）", "price": 129, "note": "附 29 元飲料" },
+            { "name": "16號餐（經典排骨酥＋排骨酥肉焿＋香檸吉司豬排堡）", "price": 139, "note": "附 29 元飲料" }
+          ]
+        },
+        {
+          "category": "早安特惠餐（週一至週五 10:30 前）",
+          "items": [
+            { "name": "早1 - 烤醬雞堡", "price": 65, "note": "附 29 元飲料；假日依原價" },
+            { "name": "早2 - 香檸吉司豬排堡", "price": 75, "note": "附 29 元飲料；假日依原價" },
+            { "name": "早3 - 五穀瘦肉粥", "price": 53, "note": "附 29 元飲料；假日依原價" },
+            { "name": "早4 - 赤肉麵線焿", "price": 53, "note": "附 29 元飲料；可加 6 元換麻辣口味" },
+            { "name": "早5 - 火腿蛋三明治", "price": 46, "note": "附 29 元飲料；假日依原價" },
+            { "name": "早6 - 肉鬆蛋三明治", "price": 49, "note": "附 29 元飲料；假日依原價" }
+          ]
+        },
+        {
+          "category": "主餐單點",
+          "items": [
+            { "name": "鮮脆雞腿堡", "price": 69, "note": "單點" },
+            { "name": "香檸吉司豬排堡", "price": 59, "note": "單點" },
+            { "name": "烤醬雞堡", "price": 47, "note": "單點" },
+            { "name": "脆皮炸雞（腿／塊）", "price": 51, "note": "單點，附胡椒粉" },
+            { "name": "赤肉麵線焿", "price": 42, "note": "單點" },
+            { "name": "五穀瘦肉粥", "price": 42, "note": "單點" },
+            { "name": "鮮酥雞肉焿", "price": 42, "note": "單點" }
+          ]
+        },
+        {
+          "category": "點心 / 湯品",
+          "items": [
+            { "name": "無骨雞塊（5入）", "price": 49, "note": "單點" },
+            { "name": "黃金鮮酥雞", "price": 49, "note": "單點" },
+            { "name": "經典排骨酥", "price": 45, "note": "單點" },
+            { "name": "義式紅醬波浪薯", "price": 44, "note": "附義式紅醬；定食加購 +39 元" },
+            { "name": "香酥米糕", "price": 35, "note": "單點" },
+            { "name": "地瓜薯條", "price": 28, "note": "定食加購優惠價 +26 元" },
+            { "name": "超長熱狗", "price": 29, "note": "單點" },
+            { "name": "玉米濃湯", "price": 29, "note": "單點" }
+          ]
+        },
+        {
+          "category": "甜點",
+          "items": [
+            { "name": "麻糬棒（5入）", "price": 29, "note": "附黑糖蜜" }
+          ]
+        },
+        {
+          "category": "飲品",
+          "sizeLabels": ["小", "中", "大"],
+          "items": [
+            {
+              "name": "可樂 / 汽水 / 蘋果汁",
+              "price": 29,
+              "prices": { "小": null, "中": 29, "大": 34 },
+              "note": "汽水類與蘋果汁限高屏地區供應；中杯可作 29 元附餐飲料"
+            },
+            {
+              "name": "檸檬風味紅茶 / 台灣烏龍（無糖）",
+              "price": 29,
+              "prices": { "小": null, "中": 29, "大": 34 },
+              "note": "中杯可作 29 元附餐飲料"
+            },
+            {
+              "name": "紅茶牛奶",
+              "price": 29,
+              "prices": { "小": 29, "中": 34, "大": 39 },
+              "note": "小杯可作 29 元附餐飲料"
+            },
+            {
+              "name": "熱桂花烏龍 / 熱美式咖啡",
+              "price": 29,
+              "prices": { "小": 29, "中": null, "大": null },
+              "note": "熱飲單一規格 29 元（可作附餐飲料）"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="zh-Hant" data-theme="light" data-theme-mode="system">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>丹丹漢堡（南部）｜菜單與即時價格收集</title>
+  <script>
+    (function () {
+      try {
+        var saved = localStorage.getItem('menu_collector_theme') || 'system';
+        var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        var resolved = saved === 'system' ? (prefersDark ? 'dark' : 'light') : saved;
+        if (resolved !== 'dark' && resolved !== 'light') resolved = 'light';
+        document.documentElement.setAttribute('data-theme', resolved);
+        document.documentElement.setAttribute('data-theme-mode', saved);
+      } catch (e) {
+        document.documentElement.setAttribute('data-theme', 'light');
+        document.documentElement.setAttribute('data-theme-mode', 'system');
+      }
+    })();
+  </script>
+  <style>
+    :root {
+      --bg-page: #F8F7F4;
+      --bg-card: #FFFFFF;
+      --bg-subtle: #F1EFEA;
+      --text-primary: #1C1E21;
+      --text-secondary: #646A73;
+      --text-muted: #8E95A0;
+      --border-color: #E6E2D8;
+      --accent: #F97316;
+      --accent-hover: #EA580C;
+      --accent-soft: #FFF1E6;
+      --accent-soft-hover: #FFE4CE;
+      --accent-text: #C2410C;
+      --success-bg: #ECFDF3;
+      --success-text: #15803D;
+      --success-border: #BBF7D0;
+      --shadow-sm: 0 1px 2px rgba(28, 30, 33, 0.05);
+      --radius-sm: 10px;
+      --radius-md: 14px;
+      --radius-lg: 20px;
+      --font-sans: "Inter", "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    html[data-theme="dark"] {
+      --bg-page: #121316;
+      --bg-card: #1D1F26;
+      --bg-subtle: #252832;
+      --text-primary: #F3F4F6;
+      --text-secondary: #A1A7B3;
+      --text-muted: #717885;
+      --border-color: #2C303C;
+      --accent: #FB923C;
+      --accent-hover: #F97316;
+      --accent-soft: rgba(249, 115, 22, 0.16);
+      --accent-soft-hover: rgba(249, 115, 22, 0.25);
+      --accent-text: #FDBA74;
+      --success-bg: rgba(34, 197, 94, 0.14);
+      --success-text: #86EFAC;
+      --success-border: rgba(34, 197, 94, 0.3);
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.25);
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      background-color: var(--bg-page);
+      color: var(--text-primary);
+      font-family: var(--font-sans);
+      line-height: 1.55;
+      transition: background-color 0.2s ease, color 0.2s ease;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    button { font-family: inherit; }
+    .tabular-nums { font-variant-numeric: tabular-nums; }
+
+    .page-shell {
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 24px 20px 64px;
+    }
+
+    /* Top Nav */
+    .top-nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      padding: 14px 18px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-sm);
+      margin-bottom: 22px;
+    }
+
+    .btn-back {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 8px 14px;
+      border-radius: 12px;
+      background: var(--accent-soft);
+      color: var(--accent-text);
+      font-size: 0.88rem;
+      font-weight: 700;
+      transition: background-color 0.16s ease;
+    }
+
+    .btn-back:hover {
+      background: var(--accent-soft-hover);
+    }
+
+    .theme-switcher {
+      display: inline-flex;
+      align-items: center;
+      padding: 3px;
+      background: var(--bg-subtle);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      gap: 2px;
+    }
+
+    .theme-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      border: none;
+      background: transparent;
+      color: var(--text-secondary);
+      padding: 6px 10px;
+      border-radius: 9px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .theme-btn.is-active {
+      background: var(--accent-soft);
+      color: var(--accent-text);
+    }
+
+    /* Shop Hero Card */
+    .shop-hero {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      box-shadow: var(--shadow-sm);
+      margin-bottom: 22px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .badge-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .badge-region {
+      padding: 4px 11px;
+      border-radius: 8px;
+      background: var(--accent-soft);
+      color: var(--accent-text);
+      font-size: 0.8rem;
+      font-weight: 700;
+    }
+
+    .badge-status {
+      padding: 4px 11px;
+      border-radius: 999px;
+      background: var(--success-bg);
+      color: var(--success-text);
+      border: 1px solid var(--success-border);
+      font-size: 0.78rem;
+      font-weight: 700;
+    }
+
+    .shop-hero h1 {
+      margin: 0;
+      font-size: 1.65rem;
+      font-weight: 800;
+      letter-spacing: -0.01em;
+    }
+
+    .shop-branch {
+      margin: 0;
+      font-size: 0.94rem;
+      color: var(--text-secondary);
+    }
+
+    .info-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 12px;
+      padding-top: 12px;
+      border-top: 1px dashed var(--border-color);
+    }
+
+    .info-cell {
+      background: var(--bg-subtle);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 12px 14px;
+    }
+
+    .info-label {
+      font-size: 0.76rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
+
+    .info-value {
+      font-size: 0.88rem;
+      color: var(--text-primary);
+    }
+
+    .link-pills {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .link-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 13px;
+      border-radius: var(--radius-sm);
+      background: var(--accent-soft);
+      color: var(--accent-text);
+      font-size: 0.84rem;
+      font-weight: 700;
+    }
+
+    .link-pill:hover {
+      background: var(--accent-soft-hover);
+    }
+
+    .link-pill.is-muted {
+      background: var(--bg-subtle);
+      color: var(--text-muted);
+      cursor: default;
+    }
+
+    /* Menu Category Sections (緊密瀑布雙欄，消除留白並自動對齊) */
+    .menu-grid {
+      column-count: 1;
+      column-gap: 16px;
+    }
+
+    @media (min-width: 720px) {
+      .menu-grid {
+        column-count: 2;
+      }
+    }
+
+    .menu-card {
+      display: inline-block;
+      width: 100%;
+      break-inside: avoid;
+      margin-bottom: 16px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 18px 20px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .menu-card-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 12px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .menu-card-title {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      margin: 0;
+      font-size: 1.02rem;
+      font-weight: 700;
+    }
+
+    .cat-icon-box {
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.85rem;
+      font-weight: 800;
+      flex-shrink: 0;
+    }
+
+    .cat-count {
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--text-muted);
+    }
+
+    .menu-subhead {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 6px 10px;
+      margin-bottom: 8px;
+      border-radius: 8px;
+      background: var(--bg-subtle);
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--text-secondary);
+    }
+
+    .menu-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .menu-item {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 7px 0;
+      border-bottom: 1px dashed var(--border-color);
+    }
+
+    .menu-item:last-child {
+      border-bottom: none;
+      padding-bottom: 0;
+    }
+
+    .item-name {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .item-note {
+      display: block;
+      font-size: 0.76rem;
+      color: var(--text-secondary);
+      margin-top: 2px;
+    }
+
+    .item-price {
+      font-size: 0.95rem;
+      font-weight: 800;
+      color: var(--accent-text);
+      white-space: nowrap;
+    }
+  </style>
+</head>
+<body>
+  <div class="page-shell">
+    <!-- Top Nav -->
+    <nav class="top-nav" aria-label="頁面導覽">
+      <a class="btn-back" href="../index.html">← 返回首頁</a>
+
+      <div class="theme-switcher" role="group" aria-label="主題模式切換">
+        <button type="button" class="theme-btn" data-theme-option="system">系統</button>
+        <button type="button" class="theme-btn" data-theme-option="light">淺色</button>
+        <button type="button" class="theme-btn" data-theme-option="dark">深色</button>
+      </div>
+    </nav>
+
+    <!-- Shop Header Info -->
+    <header class="shop-hero">
+      <div class="badge-row">
+        <span class="badge-region">📍 南部</span>
+        <span class="badge-status">菜單價格完整</span>
+      </div>
+
+      <div>
+        <h1>丹丹漢堡</h1>
+        <p class="shop-branch">台南／高雄／屏東各分店（參考官網公開菜單）</p>
+      </div>
+
+      <div class="info-grid">
+        <div class="info-cell">
+          <div class="info-label">營業時間</div>
+          <div class="info-value">多數門市約 06:30 / 07:00 - 21:00（各分店公休日不同；早安特惠餐為週一至週五 10:30 前）</div>
+        </div>
+        <div class="info-cell">
+          <div class="info-label">資料抓取本地時間（Local Time）</div>
+          <div class="info-value tabular-nums">2026-11-16 15:21（+08:00）</div>
+        </div>
+        <div class="info-cell">
+          <div class="info-label">最後更新備註</div>
+          <div class="info-value">已彙整丹丹漢堡官網及 2025-2026 公開菜單與標價；多數門市僅收現金，實際依各分店現場公告為準</div>
+        </div>
+      </div>
+
+      <div class="link-pills">
+        <a class="link-pill" href="https://www.dain-dain-hamburger.com/" target="_blank" rel="noopener noreferrer">🌐 官方網站</a>
+        <span class="link-pill is-muted">Facebook（無統一官方粉專）</span>
+        <span class="link-pill is-muted">Instagram（無統一官方帳號）</span>
+      </div>
+    </header>
+
+    <!-- Menu Categories -->
+    <main class="menu-grid">
+      <!-- 精選定食餐 -->
+      <section class="menu-card">
+        <div class="menu-card-head">
+          <h2 class="menu-card-title"><span class="cat-icon-box">主</span> 主餐（精選定食餐 1～12 號）</h2>
+          <span class="cat-count tabular-nums">12 項</span>
+        </div>
+        <div class="menu-list">
+          <div class="menu-item"><div><span class="item-name">1號餐（赤肉麵線焿＋脆皮炸雞）</span><span class="item-note">附 29 元飲料</span></div><span class="item-price tabular-nums">$109</span></div>
+          <div class="menu-item"><div><span class="item-name">2號餐（香檸吉司豬排堡＋蘑菇雞肉可樂餅）</span><span class="item-note">附 29 元飲料</span></div><span class="item-price tabular-nums">$119</span></div>
+          <div class="menu-item"><div><span class="item-name">3號餐（無骨雞塊＋黃金鮮酥雞）</span><span class="item-note">附 29 元飲料</span></div><span class="item-price tabular-nums">$109</span></div>
+          <div class="menu-item"><div><span class="item-name">4號餐（五穀瘦肉粥＋脆皮炸雞）</span><span class="item-note">附 29 元飲料</span></div><span class="item-price tabular-nums">$109</span></div>
+          <div class="menu-item"><div><span class="item-name">5號餐（鮮脆雞腿堡＋玉米濃湯）</span><span class="item-note">附 29 元飲料</span></div><span class="item-price tabular-nums">$104</span></div>
+          <div class="menu-item"><div><span class="item-name">6號餐（鮮酥雞肉焿＋烤醬雞堡）</span><span class="item-note">附 29 元飲料</span></div><span class="item-price tabular-nums">$99</span></div>
+          <div class="menu-item"><div><span class="item-name">7號餐（烤醬雞堡＋脆皮炸雞）</span><span class="item-note">附 29 元飲料</span></div><span class="item-price tabular-nums">$112</span></div>
+          <div class="menu-item"><div><span class="item-name">8號餐（香檸吉司豬排堡＋脆皮炸雞）</span><span class="item-note">附 29 元飲料</span></div><span class="item-price tabular-nums">$119</span></div>
+          <div class="menu-item"><div><span class="item-name">9號餐（赤肉麵線焿＋鮮脆雞腿堡）</span><span class="item-note">附 29 元飲料</span></div><span class="item-price tabular-nums">$119</span></div>
+          <div class="menu-item"><div><span class="item-name">10號餐（2塊脆皮炸雞，腿／塊任選）</span><span class="item-note">附 29 元飲料</span></div><span class="item-price tabular-nums">$113</span></div>
+          <div class="menu-item"><div><span class="item-name">11號餐（赤肉麵線焿＋經典排骨酥）</span><span class="item-note">附 29 元飲料</span></div><span class="item-price tabular-nums">$89</span></div>
+          <div class="menu-item"><div><span class="item-name">12號餐（五穀瘦肉粥＋蘑菇雞肉可樂餅 2入）</span><span class="item-note">附 29 元飲料</span></div><span class="item-price tabular-nums">$99</span></div>
+        </div>
+      </section>
+
+      <!-- 呷飽餐 & 早安特惠餐 -->
+      <section class="menu-card">
+        <div class="menu-card-head">
+          <h2 class="menu-card-title"><span class="cat-icon-box">飽</span> 主餐（呷飽餐 13～16 號四件組）</h2>
+          <span class="cat-count tabular-nums">4 項</span>
+        </div>
+        <div class="menu-list">
+          <div class="menu-item"><div><span class="item-name">13號餐（烤醬雞堡＋玉米濃湯＋無骨雞塊 5入）</span><span class="item-note">附 29 元飲料</span></div><span class="item-price tabular-nums">$129</span></div>
+          <div class="menu-item"><div><span class="item-name">14號餐（經典排骨酥＋鮮酥雞肉焿＋脆皮炸雞）</span><span class="item-note">附 29 元飲料</span></div><span class="item-price tabular-nums">$139</span></div>
+          <div class="menu-item"><div><span class="item-name">15號餐（黃金鮮酥雞＋排骨酥肉焿＋香酥米糕）</span><span class="item-note">附 29 元飲料</span></div><span class="item-price tabular-nums">$129</span></div>
+          <div class="menu-item"><div><span class="item-name">16號餐（經典排骨酥＋排骨酥肉焿＋香檸吉司豬排堡）</span><span class="item-note">附 29 元飲料</span></div><span class="item-price tabular-nums">$139</span></div>
+        </div>
+
+        <div class="menu-card-head" style="margin-top:20px;">
+          <h2 class="menu-card-title"><span class="cat-icon-box">早</span> 早安特惠餐（平日 10:30 前）</h2>
+          <span class="cat-count tabular-nums">6 項</span>
+        </div>
+        <div class="menu-list">
+          <div class="menu-item"><div><span class="item-name">早1 - 烤醬雞堡</span><span class="item-note">附 29 元飲料；假日依原價</span></div><span class="item-price tabular-nums">$65</span></div>
+          <div class="menu-item"><div><span class="item-name">早2 - 香檸吉司豬排堡</span><span class="item-note">附 29 元飲料；假日依原價</span></div><span class="item-price tabular-nums">$75</span></div>
+          <div class="menu-item"><div><span class="item-name">早3 - 五穀瘦肉粥</span><span class="item-note">附 29 元飲料；假日依原價</span></div><span class="item-price tabular-nums">$53</span></div>
+          <div class="menu-item"><div><span class="item-name">早4 - 赤肉麵線焿</span><span class="item-note">附 29 元飲料；可加 6 元換麻辣口味</span></div><span class="item-price tabular-nums">$53</span></div>
+          <div class="menu-item"><div><span class="item-name">早5 - 火腿蛋三明治</span><span class="item-note">附 29 元飲料；假日依原價</span></div><span class="item-price tabular-nums">$46</span></div>
+          <div class="menu-item"><div><span class="item-name">早6 - 肉鬆蛋三明治</span><span class="item-note">附 29 元飲料；假日依原價</span></div><span class="item-price tabular-nums">$49</span></div>
+        </div>
+      </section>
+
+      <!-- 主餐單點 -->
+      <section class="menu-card">
+        <div class="menu-card-head">
+          <h2 class="menu-card-title"><span class="cat-icon-box">單</span> 主餐單點</h2>
+          <span class="cat-count tabular-nums">7 項</span>
+        </div>
+        <div class="menu-list">
+          <div class="menu-item"><span class="item-name">鮮脆雞腿堡</span><span class="item-price tabular-nums">$69</span></div>
+          <div class="menu-item"><span class="item-name">香檸吉司豬排堡</span><span class="item-price tabular-nums">$59</span></div>
+          <div class="menu-item"><span class="item-name">烤醬雞堡</span><span class="item-price tabular-nums">$47</span></div>
+          <div class="menu-item"><div><span class="item-name">脆皮炸雞（腿／塊）</span><span class="item-note">附胡椒粉</span></div><span class="item-price tabular-nums">$51</span></div>
+          <div class="menu-item"><span class="item-name">赤肉麵線焿</span><span class="item-price tabular-nums">$42</span></div>
+          <div class="menu-item"><span class="item-name">五穀瘦肉粥</span><span class="item-price tabular-nums">$42</span></div>
+          <div class="menu-item"><span class="item-name">鮮酥雞肉焿</span><span class="item-price tabular-nums">$42</span></div>
+        </div>
+      </section>
+
+      <!-- 點心 / 湯品 & 甜點 -->
+      <section class="menu-card">
+        <div class="menu-card-head">
+          <h2 class="menu-card-title"><span class="cat-icon-box">點</span> 點心 / 湯品</h2>
+          <span class="cat-count tabular-nums">8 項</span>
+        </div>
+        <div class="menu-list">
+          <div class="menu-item"><span class="item-name">無骨雞塊（5入）</span><span class="item-price tabular-nums">$49</span></div>
+          <div class="menu-item"><span class="item-name">黃金鮮酥雞</span><span class="item-price tabular-nums">$49</span></div>
+          <div class="menu-item"><span class="item-name">經典排骨酥</span><span class="item-price tabular-nums">$45</span></div>
+          <div class="menu-item"><div><span class="item-name">義式紅醬波浪薯</span><span class="item-note">附義式紅醬；定食加購 +39 元</span></div><span class="item-price tabular-nums">$44</span></div>
+          <div class="menu-item"><span class="item-name">香酥米糕</span><span class="item-price tabular-nums">$35</span></div>
+          <div class="menu-item"><div><span class="item-name">地瓜薯條</span><span class="item-note">定食加購優惠價 +26 元</span></div><span class="item-price tabular-nums">$28</span></div>
+          <div class="menu-item"><span class="item-name">超長熱狗</span><span class="item-price tabular-nums">$29</span></div>
+          <div class="menu-item"><span class="item-name">玉米濃湯</span><span class="item-price tabular-nums">$29</span></div>
+        </div>
+
+        <div class="menu-card-head" style="margin-top:20px;">
+          <h2 class="menu-card-title"><span class="cat-icon-box">甜</span> 甜點</h2>
+          <span class="cat-count tabular-nums">1 項</span>
+        </div>
+        <div class="menu-list">
+          <div class="menu-item"><div><span class="item-name">麻糬棒（5入）</span><span class="item-note">附黑糖蜜</span></div><span class="item-price tabular-nums">$29</span></div>
+        </div>
+      </section>
+
+      <!-- 飲品 -->
+      <section class="menu-card">
+        <div class="menu-card-head">
+          <h2 class="menu-card-title"><span class="cat-icon-box">飲</span> 飲品</h2>
+          <span class="cat-count tabular-nums">4 組品項 · 價格（小 / 中 / 大）</span>
+        </div>
+        <div class="menu-subhead">
+          <span>品項（同類飲品以 / 分隔）</span>
+          <span class="tabular-nums">小 / 中 / 大</span>
+        </div>
+        <div class="menu-list">
+          <div class="menu-item">
+            <div><span class="item-name">可樂 / 汽水 / 蘋果汁</span><span class="item-note">汽水類與蘋果汁限高屏地區供應；中杯可作 29 元附餐飲料</span></div>
+            <span class="item-price tabular-nums">— / $29 / $34</span>
+          </div>
+          <div class="menu-item">
+            <div><span class="item-name">檸檬風味紅茶 / 台灣烏龍（無糖）</span><span class="item-note">中杯可作 29 元附餐飲料</span></div>
+            <span class="item-price tabular-nums">— / $29 / $34</span>
+          </div>
+          <div class="menu-item">
+            <div><span class="item-name">紅茶牛奶</span><span class="item-note">小杯可作 29 元附餐飲料</span></div>
+            <span class="item-price tabular-nums">$29 / $34 / $39</span>
+          </div>
+          <div class="menu-item">
+            <div><span class="item-name">熱桂花烏龍 / 熱美式咖啡</span><span class="item-note">熱飲單一規格 29 元（可作附餐飲料）</span></div>
+            <span class="item-price tabular-nums">$29 / — / —</span>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    (function () {
+      const STORAGE_KEY = 'menu_collector_theme';
+      const mediaDark = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
+
+      function applyTheme(mode) {
+        try { localStorage.setItem(STORAGE_KEY, mode); } catch {}
+        const resolved = mode === 'system' ? (mediaDark && mediaDark.matches ? 'dark' : 'light') : mode;
+        document.documentElement.setAttribute('data-theme', resolved);
+        document.documentElement.setAttribute('data-theme-mode', mode);
+        document.querySelectorAll('[data-theme-option]').forEach((btn) => {
+          btn.classList.toggle('is-active', btn.dataset.themeOption === mode);
+        });
+      }
+
+      if (mediaDark && mediaDark.addEventListener) {
+        mediaDark.addEventListener('change', () => {
+          if ((localStorage.getItem(STORAGE_KEY) || 'system') === 'system') applyTheme('system');
+        });
+      }
+
+      document.querySelectorAll('[data-theme-option]').forEach((btn) => {
+        btn.addEventListener('click', () => applyTheme(btn.dataset.themeOption));
+      });
+
+      applyTheme(localStorage.getItem(STORAGE_KEY) || 'system');
+    })();
+  </script>
+</body>
+</html>
