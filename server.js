@@ -368,7 +368,7 @@ function renderShopDetailHtml(shop) {
       <div class="badge-row">
         <span class="badge-region">📍 ${escapeHtml(shop.region || '未分類')}</span>
         <span class="badge-status ${isPlanB ? 'is-plan-b' : 'is-complete'}">
-          ${isPlanB ? '方案 B：依現場為準' : '菜單價格完整'}
+          ${isPlanB ? '依現場為準' : '菜單價格完整'}
         </span>
       </div>
       <div>
@@ -377,7 +377,7 @@ function renderShopDetailHtml(shop) {
       </div>
       ${
         isPlanB
-          ? '<div class="plan-b-banner"><strong>依現場為準（方案 B）：</strong>目前網路公開資訊缺少完整菜單或統一標價，品項與價格依門市現場為準（切勿自行估算價格）。</div>'
+          ? '<div class="plan-b-banner"><strong>依現場為準，使用者需上傳相關資料：</strong>目前網路公開資訊缺少完整菜單或統一標價，品項與價格依門市現場為準（切勿自行估算價格）。</div>'
           : ''
       }
       <div class="info-grid">
@@ -532,7 +532,7 @@ async function runGeminiCollect({ query, regionHint, sourceText, sourceUrl, imag
 嚴格規則：
 1. 盡可能整理完整分類菜單（主餐、飲品、甜點、點心/小菜、套餐等）與新台幣明確標價（純數字）。
 2. 【飲品／分尺寸品項排版規則】：若飲品或同一系列品項有多種容量價格（如小/中/大 或 中/大），不可把同一品項拆成好幾列！請在分類加上 "sizeLabels": ["小", "中", "大"]（或 ["中", "大"]），並將同類同價位飲品合併同一列、名稱以 " / " 分隔（例如 "可樂 / 汽水 / 蘋果汁"），每項附上 "prices": { "小": null, "中": 29, "大": 34 } 與基準 "price" 數字。
-3. 【防幻覺鐵則 / 方案 B】：絕對不可猜測、推算或捏造價格！如果網路上或圖片/文字找不到明確菜單品項或最新標價，或同名店家在北中南分店差異過大無法確認，必須設 status 為 "needs_info"，並在 clarificationReason 說明缺什麼或需要確認什麼。
+3. 【防幻覺鐵則 / 依現場為準】：絕對不可猜測、推算或捏造價格！如果網路上或圖片/文字找不到明確菜單品項或最新標價，或同名店家在北中南分店差異過大無法確認，必須設 status 為 "needs_info"，並在 clarificationReason 說明缺什麼或需要確認什麼。
 4. 回覆必須只包含一個合法的 JSON 物件，結構如下：
 {
   "status": "complete" | "needs_info",
@@ -543,7 +543,7 @@ async function runGeminiCollect({ query, regionHint, sourceText, sourceUrl, imag
     "region": "北部" | "中部" | "南部",
     "branch": "具體分店或適用地區說明",
     "businessHours": "營業時間",
-    "updateNote": "來源說明或方案 B 補件提示",
+    "updateNote": "來源說明或依現場為準提示",
     "links": { "official": "", "facebook": "", "instagram": "" },
     "menu": [
       { "category": "主餐", "items": [{ "name": "品項名稱", "price": 120, "note": "" }] },
@@ -683,7 +683,7 @@ const server = http.createServer(async (req, res) => {
             branch: '待確認分店',
             status: 'needs_info',
             businessHours: '待補充',
-            updateNote: '方案 B（依現場為準）：尚缺完整菜單或統一標價，品項與價格依現場為準',
+            updateNote: '依現場為準，使用者需上傳相關資料',
             links: { official: discovery.official || '', facebook: '', instagram: '' },
             menu: []
           }
@@ -728,14 +728,14 @@ const server = http.createServer(async (req, res) => {
         return sendJson(res, 200, {
           action: 'needs_clarification',
           reasonCode: 'search_error',
-          reason: `自動查詢「${query}」時發生問題（${err.message}）。請改用下方按鈕選擇方案 B 建檔或提供補充資訊：`,
+          reason: `自動查詢「${query}」時發生問題（${err.message}）。請改用下方按鈕上傳相關資料或標記為「依現場為準」：`,
           partialShop: {
             name: query,
             region: regionHint !== 'ALL' ? regionHint : '北部',
             branch: '待確認分店',
             status: 'needs_info',
             businessHours: '待補充',
-            updateNote: '方案 B（依現場為準）：自動搜尋受限或資料不足，品項與價格依現場為準',
+            updateNote: '依現場為準，使用者需上傳相關資料',
             links: { official: '', facebook: '', instagram: '' },
             menu: []
           }

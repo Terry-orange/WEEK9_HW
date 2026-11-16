@@ -925,7 +925,7 @@
       </div>
 
       <div class="collector-banner" id="collectorBanner">
-        <span>搜尋流程：先比對現有清單，若尚未收錄將自動查詢並建立 <code>shops/*.html</code>；若查無明確標價，將依<strong>方案 B</strong> 跳出按鈕對話框請您選擇處理方式。</span>
+        <span>搜尋流程：先比對現有清單，若尚未收錄將自動查詢並建立 <code>shops/*.html</code>；若查無明確標價，將跳出按鈕對話框由您上傳相關資料或標記為「依現場為準」。</span>
       </div>
     </section>
 
@@ -1004,7 +1004,7 @@
   <div class="overlay" id="clarifyModalOverlay" role="dialog" aria-modal="true" aria-labelledby="clarifyTitle">
     <div class="modal-panel">
       <div class="panel-header">
-        <h3 id="clarifyTitle">需要您確認或補充資料（方案 B）</h3>
+        <h3 id="clarifyTitle">需要您確認或上傳資料</h3>
         <button type="button" class="btn-close" id="closeClarifyBtn" aria-label="關閉視窗">✕</button>
       </div>
       <div class="panel-body">
@@ -1023,7 +1023,7 @@
             <button type="button" class="choice-action-btn is-accent" id="btnClarifyUploadPhoto">
               <div>
                 <span>📷 上傳菜單照片</span>
-                <span class="choice-sub">若已設定 AI 金鑰將自動辨識價格；否則隨方案 B 檔案保存照片</span>
+                <span class="choice-sub">若已設定 AI 金鑰將自動辨識價格；否則隨店家檔案保存照片</span>
               </div>
               <span>→</span>
             </button>
@@ -1038,7 +1038,7 @@
 
             <button type="button" class="choice-action-btn" id="btnClarifySavePlanB">
               <div>
-                <span>📋 先標記「依現場為準（方案 B）」並建立 Shop 檔案</span>
+                <span>📋 先標記「依現場為準」並建立 Shop 檔案</span>
                 <span class="choice-sub">不猜測任何價格，直接寫入商店卡片與詳細頁等待補件</span>
               </div>
               <span>✓</span>
@@ -1241,7 +1241,7 @@
           status.textContent = '本機伺服器已透過環境變數設定 GEMINI_API_KEY';
         } else {
           input.value = '';
-          status.textContent = '尚未設定金鑰（搜尋未知店家時會引導使用方案 B 按鈕）';
+          status.textContent = '尚未設定金鑰（搜尋未知店家時會引導上傳資料或標記依現場為準）';
         }
       }
 
@@ -1495,7 +1495,7 @@
                 <div class="shop-card-top">
                   <span class="badge-region">📍 ${escapeHtml(shop.region || '未分類')}</span>
                   <span class="badge-status ${isPlanB ? 'is-plan-b' : 'is-complete'}">
-                    ${isPlanB ? '方案 B：依現場為準' : '菜單價格完整'}
+                    ${isPlanB ? '依現場為準' : '菜單價格完整'}
                   </span>
                 </div>
 
@@ -1507,7 +1507,7 @@
                 ${
                   isPlanB
                     ? `<div class="plan-b-box">
-                        <div>依現場為準（方案 B）：目前尚缺統一公開標價，品項與價格依現場為準（切勿自行估算）。</div>
+                        <div>依現場為準，使用者需上傳相關資料（品項與價格請勿自行估算）。</div>
                         ${
                           state.serverOnline && !shop._isLocalDraft
                             ? `<button type="button" class="btn-soft" style="margin-top:8px;padding:5px 10px;font-size:0.77rem;" data-update-planb-id="${escapeHtml(shop.id)}">📷 補充 / 更新價格</button>`
@@ -1698,12 +1698,12 @@
                   branch: '待確認分店',
                   status: 'needs_info',
                   businessHours: '待補充',
-                  updateNote: '方案 B（依現場為準）：網路尚缺完整菜單或統一標價',
+                  updateNote: '依現場為準，使用者需上傳相關資料',
                   links: { official: '', facebook: '', instagram: '' },
                   menu: []
                 }
               });
-              setBanner('warning', `<span>「${escapeHtml(cleanQuery)}」需要您透過按鈕確認或補充資訊（方案 B）。</span>`);
+              setBanner('warning', `<span>「${escapeHtml(cleanQuery)}」需要您透過按鈕確認或上傳相關資料。</span>`);
               return;
             }
 
@@ -1714,7 +1714,7 @@
               query: cleanQuery,
               reasonCode: 'static_mode',
               reason:
-                '目前為純靜態瀏覽模式（未連線至本機寫檔伺服器）。若要讓網頁自動上網整理並直接寫入 shops/*.html，請雙擊執行專案中的 start-collector.bat；或先使用下方按鈕暫存方案 B 預覽卡片。',
+                '目前為純靜態瀏覽模式（未連線至本機寫檔伺服器）。若要讓網頁自動上網整理並直接寫入 shops/*.html，請雙擊執行專案中的 start-collector.bat；或先使用下方按鈕暫存預覽卡片。',
               regionCandidates: getAllAvailableRegions(),
               partialShop: {
                 name: cleanQuery,
@@ -1722,7 +1722,7 @@
                 branch: '待確認分店',
                 status: 'needs_info',
                 businessHours: '待補充',
-                updateNote: '方案 B（依現場為準）：網路尚缺完整菜單或統一標價',
+                updateNote: '依現場為準，使用者需上傳相關資料',
                 links: { official: '', facebook: '', instagram: '' },
                 menu: []
               }
@@ -1773,7 +1773,7 @@
           imageMimeType: ''
         };
 
-        document.getElementById('clarifyTitle').textContent = `「${ctx.query}」— 確認與方案 B 處理`;
+        document.getElementById('clarifyTitle').textContent = `「${ctx.query}」— 確認與上傳資料`;
         document.getElementById('clarifyReasonBox').textContent = ctx.reason;
         document.getElementById('clarifyPasteArea').style.display = 'none';
         document.getElementById('clarifyPhotoPreviewBox').style.display = 'none';
@@ -1801,7 +1801,7 @@
           region: ctx.selectedRegion,
           status: 'needs_info',
           fetchedAt: formatLocalISO(new Date()),
-          updateNote: extraNote || ctx.partialShop.updateNote || '方案 B（依現場為準）：品項與價格依現場為準'
+          updateNote: extraNote || ctx.partialShop.updateNote || '依現場為準，使用者需上傳相關資料'
         };
 
         if (state.serverOnline) {
@@ -1825,7 +1825,7 @@
             renderShopCards();
             setBanner(
               'success',
-              `<span>已為「<strong>${escapeHtml(data.shop.name)}</strong>」建立方案 B 檔案（<code>${escapeHtml(data.shop.detailPath)}</code>），卡片已置頂！</span>`
+              `<span>已為「<strong>${escapeHtml(data.shop.name)}</strong>」建立「依現場為準」檔案（<code>${escapeHtml(data.shop.detailPath)}</code>），卡片已置頂！</span>`
             );
             return;
           }
@@ -1841,7 +1841,7 @@
         document.getElementById('shopNameInput').value = '';
         updateSearchStatusTag();
         renderShopCards();
-        setBanner('warning', `<span>已暫存「${escapeHtml(shop.name)}」方案 B 預覽卡片於瀏覽器中（可於設定匯出 shops.json）。</span>`);
+        setBanner('warning', `<span>已暫存「${escapeHtml(shop.name)}」預覽卡片於瀏覽器中（可於設定匯出 shops.json）。</span>`);
       }
 
       function openDetailPreview(shop) {
@@ -1880,10 +1880,10 @@
           <div style="display:flex;gap:8px;flex-wrap:wrap;">
             <span class="badge-region">📍 ${escapeHtml(shop.region)} · ${escapeHtml(shop.branch)}</span>
             <span class="badge-status ${shop.status === 'needs_info' ? 'is-plan-b' : 'is-complete'}">
-              ${shop.status === 'needs_info' ? '方案 B：依現場為準' : '菜單價格完整'}
+              ${shop.status === 'needs_info' ? '依現場為準' : '菜單價格完整'}
             </span>
           </div>
-          ${shop.status === 'needs_info' ? '<div class="plan-b-box">依現場為準（方案 B）：目前尚缺完整公開菜單或統一標價，品項與價格依現場為準（切勿自行估算）。</div>' : ''}
+          ${shop.status === 'needs_info' ? '<div class="plan-b-box">依現場為準，使用者需上傳相關資料（品項與價格請勿自行估算）。</div>' : ''}
           <div class="shop-meta" style="border-top:none;padding-top:0;">
             <div class="shop-meta-row"><span class="shop-meta-label">營業時間</span><span>${escapeHtml(shop.businessHours)}</span></div>
             <div class="shop-meta-row"><span class="shop-meta-label">抓取時間</span><span class="tabular-nums">${escapeHtml(formatLocalReadable(shop.fetchedAt))}</span></div>
@@ -1988,7 +1988,7 @@
             imageMimeType: ctx.imageMimeType
           });
         } else {
-          await savePlanBRecordFromClarify('方案 B（依現場為準）：已附上菜單照片，實際價格依現場為準');
+          await savePlanBRecordFromClarify('依現場為準，已附上菜單照片，實際價格待核對');
         }
       });
 
@@ -2014,7 +2014,7 @@
             sourceText
           });
         } else {
-          await savePlanBRecordFromClarify(sourceText ? `方案 B 補充備註（依現場為準）：${sourceText}` : '方案 B（依現場為準）：已附網址，價格依現場為準');
+          await savePlanBRecordFromClarify(sourceText ? `依現場為準（補充備註）：${sourceText}` : '依現場為準，已附網址待上傳或核對菜單');
         }
       });
 
